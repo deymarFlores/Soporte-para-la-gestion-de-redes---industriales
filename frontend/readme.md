@@ -12,11 +12,22 @@ npm run dev
 
 Requiere el backend corriendo (ver `../backend/readme.md`) para tener datos reales; si no hay datos, el dashboard muestra el estado de carga/error correspondiente.
 
+## Autenticación y roles (mockeados)
+
+El backend todavía no tiene login ni permisos por dispositivo, así que se simulan en el frontend (`src/mocks/users.ts`, `src/context/AuthContext.tsx`) para poder validar cómo se comportará el producto completo:
+
+- **Administrador** (`admin@planta.com` / `admin123`): ve la red completa y el historial de incidentes.
+- **Ingeniero** (`ingeniero@planta.com` / `ing123`): ve solo los equipos que tiene autorizados (`allowedDeviceIps`), con la disponibilidad real tomada del backend.
+
+La sesión se guarda en `localStorage` solo para no perderla al recargar; no hay backend de autenticación real detrás todavía.
+
 ## Vistas
 
-- **Dashboard** (`/`): estado general del enlace, cadena de tramos (Gateway → PLC, construida dinámicamente a partir de `parentId`) e incidentes activos, actualizados en vivo por WebSocket.
-
-Pendiente: vista de historial de incidentes y la vista de acceso remoto (selección de PLC + conexión segura).
+- **Login** (`/login`).
+- **Red** (`/red`, admin): estado general del enlace, cadena de tramos e incidentes activos — igual que antes, con datos reales del backend.
+- **Incidentes** (`/incidentes`, admin): historial completo de incidentes, con datos reales.
+- **Mis equipos** (`/equipos`, ingeniero): lista de PLCs/dispositivos autorizados para ese usuario (permiso mockeado, estado real).
+- **Conectar** (`/equipos/:id/conectar`, ingeniero): flujo de conexión punto a punto — **completamente simulado** (verificación → túnel → sesión con expiración) hasta que el backend implemente el módulo de acceso remoto (certificados SSH de corta duración).
 
 ## Nota sobre datos aún no expuestos por el backend
 
