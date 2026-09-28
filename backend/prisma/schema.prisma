@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NodeType {
+  GATEWAY
+  PLC
+  DEVICE
+}
+
+enum NodeStatus {
+  UP
+  DOWN
+  UNKNOWN
+}
+
+enum IncidentType {
+  INDIVIDUAL
+  DEPENDENT
+  HEARTBEAT_TIMEOUT
+}
+
+enum IncidentStatus {
+  ACTIVE
+  RESOLVED
+}
+
+model Node {
+  id              String   @id @default(uuid())
+  name            String
+  type            NodeType
+  ip              String?
+  parentId        String?
+  parent          Node?    @relation("NodeHierarchy", fields: [parentId], references: [id])
+  children        Node[]   @relation("NodeHierarchy")
+
+  agentToken      String?  @unique
+
+  currentStatus   NodeStatus @default(UNKNOWN)
+  lastHeartbeatAt DateTime?
+  lastCheckedAt   DateTime?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  statusEvents    StatusEvent[]
+  incidents       Incident[]
+}
+
+model StatusEvent {
+  id            String     @id @default(uuid())
+  nodeId        String
+  node          Node       @relation(fields: [nodeId], references: [id])
+
+  status        NodeStatus
+  latencyMs     Int?
+  packetLossPct Float?
+  metadata      Json?
+  source        String
+
+  occurredAt    DateTime   @default(now())
+}
+
+model Incident {
+  id              String         @id @default(uuid())
+  nodeId          String
+  node            Node           @relation(fields: [nodeId], references: [id])
+
+  type            IncidentType
+  status          IncidentStatus @default(ACTIVE)
+
+  rootIncidentId  String?
+  rootIncident    Incident?      @relation("IncidentDependency", fields: [rootIncidentId], references: [id])
+  dependents      Incident[]     @relation("IncidentDependency")
+
+  startedAt       DateTime       @default(now())
+  resolvedAt      DateTime?
+  durationSeconds Int?
+}
