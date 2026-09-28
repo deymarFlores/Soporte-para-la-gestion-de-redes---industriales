@@ -2,7 +2,6 @@ import { useMonitoringDashboard, type ConnectionStatus } from "../hooks/useMonit
 import { OverallStatusBanner } from "../components/OverallStatusBanner.js";
 import { SegmentChain } from "../components/SegmentChain.js";
 import { IncidentPanel } from "../components/IncidentPanel.js";
-import { ThemeToggle } from "../components/ThemeToggle.js";
 
 const CONNECTION_LABEL: Record<ConnectionStatus, string> = {
   connecting: "Conectando…",
@@ -16,24 +15,21 @@ const CONNECTION_COLOR: Record<ConnectionStatus, string> = {
   offline: "bg-status-down",
 };
 
-export function DashboardPage() {
+export function NetworkDashboardPage() {
   const { nodes, activeIncidents, loading, error, connectionStatus } = useMonitoringDashboard();
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
-      <header className="flex items-center justify-between gap-4">
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Soporte de Red Industrial</h1>
+          <h1 className="text-xl font-semibold text-ink">Estado de la red</h1>
           <p className="text-sm text-ink-muted">Enlace remoto — planta</p>
         </div>
-        <div className="flex items-center gap-4">
-          <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
-            <span className={`h-1.5 w-1.5 rounded-full ${CONNECTION_COLOR[connectionStatus]}`} />
-            {CONNECTION_LABEL[connectionStatus]}
-          </span>
-          <ThemeToggle />
-        </div>
-      </header>
+        <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
+          <span className={`h-1.5 w-1.5 rounded-full ${CONNECTION_COLOR[connectionStatus]}`} />
+          {CONNECTION_LABEL[connectionStatus]}
+        </span>
+      </div>
 
       {loading ? (
         <p className="text-ink-muted">Cargando estado del enlace…</p>
