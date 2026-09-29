@@ -3,8 +3,9 @@ import { ThemeToggle } from "../ThemeToggle.js";
 import type { Role } from "../../types/auth.js";
 
 const ROLE_LABEL: Record<Role, string> = {
-  ADMIN: "Administrador",
-  ENGINEER: "Ingeniero",
+  ADMINISTRADOR: "Administrador",
+  SOPORTE: "Soporte",
+  CONSULTA: "Consulta",
 };
 
 export function Navbar() {
