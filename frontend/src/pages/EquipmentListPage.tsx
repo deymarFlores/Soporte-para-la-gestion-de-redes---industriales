@@ -29,8 +29,8 @@ export function EquipmentListPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="page-title">Mis equipos</h1>
-        <p className="page-subtitle">Equipos a los que tienes acceso autorizado</p>
+        <h1 className="page-title">Equipos disponibles</h1>
+        <p className="page-subtitle">Equipos de planta a los que tienes autorización para conectarte</p>
       </div>
 
       {loading ? (
@@ -45,12 +45,18 @@ export function EquipmentListPage() {
             <div key={device.id} className="card flex flex-col gap-3 p-5">
               <div className="flex flex-col gap-1">
                 <span className="font-medium text-ink">{device.name}</span>
+                <span className="text-xs text-ink-muted">{device.type}</span>
                 <span className="font-mono text-xs text-ink-muted">{device.ip}</span>
               </div>
               <StatusBadge status={device.currentStatus} />
+              {device.lastCheckedAt && (
+                <span className="text-xs text-ink-muted">
+                  Última comprobación: {new Date(device.lastCheckedAt).toLocaleString("es-BO", { dateStyle: "short", timeStyle: "short" })}
+                </span>
+              )}
               {device.currentStatus === "UP" ? (
-                <Link to={`/equipos/${device.id}/conectar`} className="btn btn-primary mt-2">
-                  Conectar
+                <Link to={`/acceso-remoto/equipos/${device.id}/conectar`} className="btn btn-primary mt-2">
+                  Solicitar acceso
                 </Link>
               ) : (
                 <button type="button" disabled className="btn btn-disabled mt-2">

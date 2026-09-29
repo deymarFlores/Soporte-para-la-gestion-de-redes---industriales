@@ -89,7 +89,7 @@ export function ConnectPage() {
     <div className="flex max-w-xl flex-col gap-6">
       <button
         type="button"
-        onClick={() => navigate("/equipos")}
+        onClick={() => navigate("/acceso-remoto/equipos")}
         className="w-fit text-sm text-ink-muted transition-colors duration-200 hover:text-ink"
       >
         ← Volver a mis equipos
