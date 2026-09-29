@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useMonitoringDashboard, type ConnectionStatus } from "../hooks/useMonitoringDashboard.js";
+import { useTopology } from "../context/TopologyContext.js";
+import type { ConnectionStatus } from "../hooks/useMonitoringDashboard.js";
 import { listIncidents } from "../api/monitoring.js";
 import { SegmentChain } from "../components/SegmentChain.js";
 import { KpiCard } from "../components/KpiCard.js";
@@ -61,7 +62,7 @@ function formatDuration(seconds: number | null): string {
 }
 
 export function DashboardPage() {
-  const { nodes, activeIncidents, loading, error, connectionStatus } = useMonitoringDashboard();
+  const { nodes, activeIncidents, monitoringLoading: loading, monitoringError: error, connectionStatus } = useTopology();
   const [recentIncidents, setRecentIncidents] = useState<IncidentResponseDTO[]>([]);
 
   useEffect(() => {
