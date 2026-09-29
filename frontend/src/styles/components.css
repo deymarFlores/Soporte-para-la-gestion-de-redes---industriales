@@ -1,0 +1,68 @@
+/*
+ * Clases de componentes reutilizables construidas sobre los tokens de tokens.css.
+ * Regla del proyecto: un botón, card, input o título nuevo usa estas clases en vez de
+ * repetir utilidades de Tailwind sueltas en cada página. Si hace falta una variante nueva,
+ * se agrega aquí, no se improvisa en el componente.
+ */
+@layer components {
+  /* Botones: combinar .btn con una variante, ej. className="btn btn-primary" */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 active:scale-[0.98];
+  }
+  .btn-primary {
+    @apply bg-accent text-surface hover:bg-accent-strong;
+  }
+  .btn-secondary {
+    @apply border border-border text-ink-muted hover:border-accent hover:text-ink;
+  }
+  .btn-danger-outline {
+    @apply border border-border text-ink-muted hover:border-status-down hover:text-status-down;
+  }
+  .btn-disabled {
+    @apply cursor-not-allowed border border-border text-ink-muted opacity-60;
+  }
+
+  /* Campos de formulario */
+  .input {
+    @apply rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors duration-200 focus:border-accent;
+  }
+  .field-label {
+    @apply text-sm text-ink-muted;
+  }
+
+  /* Contenedor base para paneles/tarjetas (sin sombra, sin anidar cards) */
+  .card {
+    @apply rounded-lg border border-border bg-surface-raised;
+  }
+
+  /* Encabezados de página, consistentes en todas las vistas */
+  .page-title {
+    @apply text-xl font-semibold text-ink;
+  }
+  .page-subtitle {
+    @apply text-sm text-ink-muted;
+  }
+  .section-label {
+    @apply text-sm font-medium uppercase tracking-wide text-ink-muted;
+  }
+
+  /* Indicador de estado (punto de color) */
+  .status-dot {
+    @apply h-2 w-2 rounded-full transition-colors duration-200;
+  }
+
+  /* Estado vacío / mensaje informativo dentro de un card */
+  .empty-state {
+    @apply rounded-lg border border-border bg-surface-raised px-4 py-6 text-center text-ink-muted;
+  }
+
+  /* Aviso de error inline (formularios, banners de carga fallida) */
+  .alert-danger {
+    @apply rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down;
+  }
+
+  /* Aviso positivo (ej. sesión conectada) */
+  .alert-success {
+    @apply rounded-lg border border-status-up/40 bg-status-up/10 px-4 py-3 text-status-up;
+  }
+}
