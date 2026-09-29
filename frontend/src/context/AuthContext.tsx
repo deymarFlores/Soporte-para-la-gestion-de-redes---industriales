@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser } from "../types/auth.js";
-import { findUserByCredentials } from "../mocks/users.js";
+import { useUsers } from "./UsersContext.js";
 
 const STORAGE_KEY = "auth-user";
 
@@ -22,6 +22,7 @@ function readStoredUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { authenticate } = useUsers();
   const [user, setUser] = useState<AuthUser | null>(readStoredUser);
 
   useEffect(() => {
@@ -37,14 +38,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       login: (email: string, password: string) => {
-        const found = findUserByCredentials(email, password);
+        const found = authenticate(email, password);
         if (!found) return false;
         setUser(found);
         return true;
       },
       logout: () => setUser(null),
     }),
-    [user]
+    [user, authenticate]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
