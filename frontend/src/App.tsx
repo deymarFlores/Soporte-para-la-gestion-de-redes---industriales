@@ -1,6 +1,8 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import { UsersProvider } from "./context/UsersContext.js";
 import { AuthProvider } from "./context/AuthContext.js";
 import { TopologyProvider } from "./context/TopologyContext.js";
+import { SessionsProvider } from "./context/SessionsContext.js";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute.js";
 import { AppLayout } from "./components/layout/AppLayout.js";
 import { LoginPage } from "./pages/LoginPage.js";
@@ -8,10 +10,14 @@ import { DashboardPage } from "./pages/DashboardPage.js";
 import { IncidentsHistoryPage } from "./pages/IncidentsHistoryPage.js";
 import { EquipmentListPage } from "./pages/EquipmentListPage.js";
 import { ConnectPage } from "./pages/ConnectPage.js";
-import { PlaceholderPage } from "./pages/PlaceholderPage.js";
 import { TopologiaPage } from "./pages/monitoreo/TopologiaPage.js";
+import { AnalisisHistoricoPage } from "./pages/AnalisisHistoricoPage.js";
 import { EquiposPage } from "./pages/administracion/EquiposPage.js";
 import { TramosPage } from "./pages/administracion/TramosPage.js";
+import { SitiosPage } from "./pages/administracion/SitiosPage.js";
+import { UsuariosPage } from "./pages/administracion/UsuariosPage.js";
+import { SesionesActivasPage } from "./pages/accesoRemoto/SesionesActivasPage.js";
+import { HistorialAccesosPage } from "./pages/accesoRemoto/HistorialAccesosPage.js";
 
 function AppRoutes() {
   return (
@@ -22,7 +28,9 @@ function AppRoutes() {
         <Route
           element={
             <TopologyProvider>
-              <AppLayout />
+              <SessionsProvider>
+                <AppLayout />
+              </SessionsProvider>
             </TopologyProvider>
           }
         >
@@ -33,38 +41,18 @@ function AppRoutes() {
 
           <Route path="/incidentes" element={<IncidentsHistoryPage />} />
 
-          <Route
-            path="/analisis-historico"
-            element={
-              <PlaceholderPage
-                title="Análisis histórico"
-                description="Disponibilidad, latencia, pérdida de paquetes e incidentes en el tiempo"
-              />
-            }
-          />
+          <Route path="/analisis-historico" element={<AnalisisHistoricoPage />} />
 
           <Route element={<ProtectedRoute allowedRoles={["ADMINISTRADOR", "SOPORTE"]} />}>
             <Route path="/acceso-remoto/equipos" element={<EquipmentListPage />} />
             <Route path="/acceso-remoto/equipos/:nodeId/conectar" element={<ConnectPage />} />
-            <Route
-              path="/acceso-remoto/sesiones"
-              element={<PlaceholderPage title="Sesiones activas" description="Conexiones remotas en curso, de todos los usuarios" />}
-            />
-            <Route
-              path="/acceso-remoto/historial"
-              element={<PlaceholderPage title="Historial de accesos" description="Auditoría de conexiones remotas pasadas" />}
-            />
+            <Route path="/acceso-remoto/sesiones" element={<SesionesActivasPage />} />
+            <Route path="/acceso-remoto/historial" element={<HistorialAccesosPage />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={["ADMINISTRADOR"]} />}>
-            <Route
-              path="/administracion/usuarios"
-              element={<PlaceholderPage title="Usuarios" description="Gestión de cuentas y roles del sistema" />}
-            />
-            <Route
-              path="/administracion/sitios"
-              element={<PlaceholderPage title="Sitios" description="Instalaciones/plantas registradas" />}
-            />
+            <Route path="/administracion/usuarios" element={<UsuariosPage />} />
+            <Route path="/administracion/sitios" element={<SitiosPage />} />
             <Route path="/administracion/equipos" element={<EquiposPage />} />
             <Route path="/administracion/tramos" element={<TramosPage />} />
           </Route>
@@ -78,8 +66,10 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <UsersProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </UsersProvider>
   );
 }
