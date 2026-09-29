@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getDashboardSummary } from "../api/monitoring.js";
 import { useAuth } from "../context/AuthContext.js";
+import { useSessions } from "../context/SessionsContext.js";
 import type { NodeResponseDTO } from "../types/monitoring.js";
 
 type FlowState =
@@ -19,12 +20,15 @@ const SESSION_SECONDS = 20 * 60;
 export function ConnectPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
   const { user } = useAuth();
+  const { startSession, endSession } = useSessions();
   const navigate = useNavigate();
 
   const [node, setNode] = useState<NodeResponseDTO | null>(null);
   const [flow, setFlow] = useState<FlowState>("loading");
   const [remainingSeconds, setRemainingSeconds] = useState(SESSION_SECONDS);
   const [mockPort, setMockPort] = useState<number | null>(null);
+  const [motivo, setMotivo] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     getDashboardSummary()
@@ -43,12 +47,14 @@ export function ConnectPage() {
   useEffect(() => {
     if (flow !== "connected") return undefined;
     if (remainingSeconds <= 0) {
+      if (sessionId) endSession(sessionId, "EXPIRADA");
+      setSessionId(null);
       setFlow("ready");
       return undefined;
     }
     const timer = window.setTimeout(() => setRemainingSeconds((seconds) => seconds - 1), 1000);
     return () => window.clearTimeout(timer);
-  }, [flow, remainingSeconds]);
+  }, [flow, remainingSeconds, sessionId, endSession]);
 
   function startConnection(): void {
     setFlow("checking");
@@ -57,12 +63,25 @@ export function ConnectPage() {
       window.setTimeout(() => {
         setMockPort(40000 + Math.floor(Math.random() * 10000));
         setRemainingSeconds(SESSION_SECONDS);
+        if (user && node) {
+          const id = startSession({
+            userId: user.id,
+            userName: user.name,
+            equipoId: node.id,
+            equipoNombre: node.name,
+            motivo,
+            maxDurationSeconds: SESSION_SECONDS,
+          });
+          setSessionId(id);
+        }
         setFlow("connected");
       }, 1400);
     }, 700);
   }
 
   function disconnect(): void {
+    if (sessionId) endSession(sessionId, "FINALIZADA");
+    setSessionId(null);
     setFlow("ready");
     setMockPort(null);
   }
@@ -101,7 +120,7 @@ export function ConnectPage() {
       </div>
 
       <span className="w-fit rounded-full border border-border px-2.5 py-1 text-xs text-ink-muted">
-        Vista previa — flujo simulado, pendiente de implementación real
+        Vista previa — túnel simulado, pendiente de implementación real
       </span>
 
       {flow === "unavailable" && (
@@ -111,9 +130,41 @@ export function ConnectPage() {
       )}
 
       {flow === "ready" && (
-        <button type="button" onClick={startConnection} className="btn btn-primary w-fit px-4">
-          Conectar
-        </button>
+        <div className="card flex flex-col gap-4 p-5">
+          <dl className="flex flex-col gap-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-muted">Usuario</dt>
+              <dd className="text-ink">{user?.name}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-ink-muted">Tiempo máximo de sesión</dt>
+              <dd className="text-ink">{SESSION_SECONDS / 60} min</dd>
+            </div>
+          </dl>
+
+          <div className="flex flex-col gap-1.5">
+            <label className="field-label" htmlFor="motivo">
+              Motivo de acceso
+            </label>
+            <input
+              id="motivo"
+              required
+              placeholder="Ej. Ajuste de parámetros del PLC"
+              className="input"
+              value={motivo}
+              onChange={(event) => setMotivo(event.target.value)}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={startConnection}
+            disabled={motivo.trim() === ""}
+            className="btn btn-primary w-fit px-4 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Solicitar conexión
+          </button>
+        </div>
       )}
 
       {(flow === "checking" || flow === "tunneling") && (
@@ -136,7 +187,7 @@ export function ConnectPage() {
           </div>
 
           <p className="text-sm text-ink-muted">
-            Sesión válida por tiempo limitado. Apunta TIA Portal a{" "}
+            Sesión registrada y con tiempo limitado. Apunta TIA Portal a{" "}
             <code className="font-mono text-ink">127.0.0.1:102</code>.
           </p>
 
