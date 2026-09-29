@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext.js";
+import { TopologyProvider } from "./context/TopologyContext.js";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute.js";
 import { AppLayout } from "./components/layout/AppLayout.js";
 import { LoginPage } from "./pages/LoginPage.js";
@@ -8,6 +9,9 @@ import { IncidentsHistoryPage } from "./pages/IncidentsHistoryPage.js";
 import { EquipmentListPage } from "./pages/EquipmentListPage.js";
 import { ConnectPage } from "./pages/ConnectPage.js";
 import { PlaceholderPage } from "./pages/PlaceholderPage.js";
+import { TopologiaPage } from "./pages/monitoreo/TopologiaPage.js";
+import { EquiposPage } from "./pages/administracion/EquiposPage.js";
+import { TramosPage } from "./pages/administracion/TramosPage.js";
 
 function AppRoutes() {
   return (
@@ -15,17 +19,17 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
+        <Route
+          element={
+            <TopologyProvider>
+              <AppLayout />
+            </TopologyProvider>
+          }
+        >
           <Route path="/" element={<DashboardPage />} />
 
-          <Route
-            path="/monitoreo/topologia"
-            element={<PlaceholderPage title="Topología" description="Diagrama interactivo del enlace, nodo por nodo" />}
-          />
-          <Route
-            path="/monitoreo/equipos"
-            element={<PlaceholderPage title="Equipos" description="Tabla de equipos registrados, con filtros y detalle" />}
-          />
+          <Route path="/monitoreo/topologia" element={<TopologiaPage />} />
+          <Route path="/monitoreo/equipos" element={<EquiposPage readOnly />} />
 
           <Route path="/incidentes" element={<IncidentsHistoryPage />} />
 
@@ -61,14 +65,8 @@ function AppRoutes() {
               path="/administracion/sitios"
               element={<PlaceholderPage title="Sitios" description="Instalaciones/plantas registradas" />}
             />
-            <Route
-              path="/administracion/equipos"
-              element={<PlaceholderPage title="Equipos" description="Alta, edición y baja de equipos monitoreados" />}
-            />
-            <Route
-              path="/administracion/tramos"
-              element={<PlaceholderPage title="Tramos" description="Configuración de los segmentos del enlace" />}
-            />
+            <Route path="/administracion/equipos" element={<EquiposPage />} />
+            <Route path="/administracion/tramos" element={<TramosPage />} />
           </Route>
         </Route>
       </Route>
