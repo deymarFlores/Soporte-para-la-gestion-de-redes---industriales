@@ -26,7 +26,7 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-      className="rounded-md border border-border px-3 py-1.5 text-sm text-ink-muted transition-colors duration-200 hover:border-accent hover:text-ink"
+      className="btn btn-secondary"
     >
       {theme === "dark" ? "Modo claro" : "Modo oscuro"}
     </button>

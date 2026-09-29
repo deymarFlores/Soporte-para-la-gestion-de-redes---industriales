@@ -22,7 +22,7 @@ export function Navbar() {
         <button
           type="button"
           onClick={logout}
-          className="rounded-md border border-border px-3 py-1.5 text-sm text-ink-muted transition-colors duration-200 hover:border-status-down hover:text-status-down"
+          className="btn btn-danger-outline"
         >
           Cerrar sesión
         </button>
