@@ -42,25 +42,21 @@ export function IncidentsHistoryPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-ink">Historial de incidentes</h1>
-        <p className="text-sm text-ink-muted">Registro de fallas detectadas en la red</p>
+        <h1 className="page-title">Historial de incidentes</h1>
+        <p className="page-subtitle">Registro de fallas detectadas en la red</p>
       </div>
 
       {loading ? (
         <p className="text-ink-muted">Cargando historial…</p>
       ) : error ? (
-        <div className="rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down">
-          No se pudo cargar el historial: {error}
-        </div>
+        <div className="alert-danger">No se pudo cargar el historial: {error}</div>
       ) : incidents.length === 0 ? (
-        <div className="rounded-lg border border-border bg-surface-raised px-4 py-6 text-center text-ink-muted">
-          Todavía no hay incidentes registrados.
-        </div>
+        <div className="empty-state">Todavía no hay incidentes registrados.</div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div className="card overflow-x-auto">
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead>
-              <tr className="border-b border-border bg-surface-raised text-left text-xs uppercase tracking-wide text-ink-muted">
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-ink-muted">
                 <th className="px-4 py-3 font-medium">Nodo</th>
                 <th className="px-4 py-3 font-medium">Tipo</th>
                 <th className="px-4 py-3 font-medium">Estado</th>
@@ -80,7 +76,7 @@ export function IncidentsHistoryPage() {
                       }`}
                     >
                       <span
-                        className={`h-1.5 w-1.5 rounded-full ${
+                        className={`status-dot h-1.5 w-1.5 ${
                           incident.status === "ACTIVE" ? "bg-status-down" : "bg-status-up"
                         }`}
                       />
