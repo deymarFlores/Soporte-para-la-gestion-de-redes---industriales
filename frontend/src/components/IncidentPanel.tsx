@@ -22,11 +22,7 @@ export function IncidentPanel({
   nodes: NodeResponseDTO[];
 }) {
   if (incidents.length === 0) {
-    return (
-      <div className="rounded-lg border border-border bg-surface-raised px-4 py-6 text-center text-ink-muted">
-        No hay incidentes activos.
-      </div>
-    );
+    return <div className="empty-state">No hay incidentes activos.</div>;
   }
 
   const nodeName = (id: string): string => nodes.find((node) => node.id === id)?.name ?? "Nodo desconocido";
@@ -36,7 +32,7 @@ export function IncidentPanel({
       {incidents.map((incident) => (
         <li
           key={incident.id}
-          className="flex items-center justify-between gap-4 rounded-lg border border-border bg-surface-raised px-4 py-3"
+          className="card flex items-center justify-between gap-4 px-4 py-3"
         >
           <div className="flex flex-col gap-0.5">
             <span className="font-medium text-ink">{nodeName(incident.nodeId)}</span>

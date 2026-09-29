@@ -15,7 +15,7 @@ const STATUS_COLOR: Record<NodeStatus, string> = {
 export function StatusBadge({ status }: { status: NodeStatus }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted">
-      <span className={`h-2 w-2 rounded-full ${STATUS_COLOR[status]} transition-colors duration-200`} />
+      <span className={`status-dot h-2 w-2 ${STATUS_COLOR[status]}`} />
       {STATUS_LABEL[status]}
     </span>
   );

@@ -19,8 +19,8 @@ export function OverallStatusBanner({ incidents }: { incidents: IncidentResponse
   const copy = COPY[overall];
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-5 py-4">
-      <span className={`h-3 w-3 shrink-0 rounded-full ${copy.dotColor} transition-colors duration-200`} />
+    <div className="card flex items-center gap-3 px-5 py-4">
+      <span className={`status-dot h-3 w-3 shrink-0 ${copy.dotColor}`} />
       <div className="flex flex-col">
         <span className="text-lg font-semibold text-ink">{copy.label}</span>
         {incidents.length > 0 && (

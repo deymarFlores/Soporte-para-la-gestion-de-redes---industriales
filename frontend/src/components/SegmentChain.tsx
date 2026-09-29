@@ -29,7 +29,7 @@ const TYPE_LABEL: Record<NodeType, string> = {
 
 function ChainCard({ node }: { node: TreeNode }) {
   return (
-    <div className="flex min-w-[180px] flex-col gap-2 rounded-lg border border-border bg-surface-raised px-4 py-3">
+    <div className="card flex min-w-[180px] flex-col gap-2 px-4 py-3">
       <span className="text-xs uppercase tracking-wide text-ink-muted">{TYPE_LABEL[node.type]}</span>
       <span className="font-medium text-ink">{node.name}</span>
       {node.ip && <span className="font-mono text-xs text-ink-muted">{node.ip}</span>}
