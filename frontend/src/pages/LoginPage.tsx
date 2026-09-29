@@ -36,13 +36,13 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-surface-raised p-8">
+      <div className="card w-full max-w-sm p-8">
         <h1 className="text-lg font-semibold text-ink">Soporte de Red Industrial</h1>
-        <p className="mt-1 text-sm text-ink-muted">Inicia sesión para continuar</p>
+        <p className="mt-1 page-subtitle">Inicia sesión para continuar</p>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="email" className="text-sm text-ink-muted">
+            <label htmlFor="email" className="field-label">
               Correo
             </label>
             <input
@@ -52,12 +52,12 @@ export function LoginPage() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors duration-200 focus:border-accent"
+              className="input"
             />
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <label htmlFor="password" className="text-sm text-ink-muted">
+            <label htmlFor="password" className="field-label">
               Contraseña
             </label>
             <input
@@ -67,7 +67,7 @@ export function LoginPage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink outline-none transition-colors duration-200 focus:border-accent"
+              className="input"
             />
           </div>
 
@@ -77,10 +77,7 @@ export function LoginPage() {
             </p>
           )}
 
-          <button
-            type="submit"
-            className="mt-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-surface transition-colors duration-200 hover:bg-accent-strong active:scale-[0.98]"
-          >
+          <button type="submit" className="btn btn-primary mt-2">
             Entrar
           </button>
         </form>
@@ -91,14 +88,14 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => loginAs("admin@planta.com", "admin123")}
-              className="rounded-md border border-border px-3 py-2 text-left text-sm text-ink-muted transition-colors duration-200 hover:border-accent hover:text-ink"
+              className="btn btn-secondary justify-start"
             >
               Entrar como Administrador
             </button>
             <button
               type="button"
               onClick={() => loginAs("ingeniero@planta.com", "ing123")}
-              className="rounded-md border border-border px-3 py-2 text-left text-sm text-ink-muted transition-colors duration-200 hover:border-accent hover:text-ink"
+              className="btn btn-secondary justify-start"
             >
               Entrar como Ingeniero
             </button>
