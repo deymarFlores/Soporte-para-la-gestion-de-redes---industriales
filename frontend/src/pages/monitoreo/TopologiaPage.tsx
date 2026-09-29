@@ -109,7 +109,7 @@ function EquipoDetailPanel({ equipo }: { equipo: EquipoView }) {
       <h2 className="text-base font-semibold text-ink">{equipo.nombre}</h2>
       <DetailRow label="Tipo" value={equipo.tipo} />
       <DetailRow label="IP / host" value={equipo.ip} />
-      <DetailRow label="Sitio" value={equipo.sitio} />
+      <DetailRow label="Sitio" value={equipo.sitioNombre} />
       <DetailRow label="Estado" value={equipo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : equipo.estado} />
       <DetailRow
         label="Última comprobación"
