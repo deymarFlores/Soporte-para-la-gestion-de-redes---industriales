@@ -94,10 +94,17 @@ export function LoginPage() {
             </button>
             <button
               type="button"
-              onClick={() => loginAs("ingeniero@planta.com", "ing123")}
+              onClick={() => loginAs("soporte@planta.com", "soporte123")}
               className="btn btn-secondary justify-start"
             >
-              Entrar como Ingeniero
+              Entrar como Soporte
+            </button>
+            <button
+              type="button"
+              onClick={() => loginAs("consulta@planta.com", "consulta123")}
+              className="btn btn-secondary justify-start"
+            >
+              Entrar como Consulta
             </button>
           </div>
         </div>
