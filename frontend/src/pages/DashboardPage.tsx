@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTopology } from "../context/TopologyContext.js";
+import { useSessions } from "../context/SessionsContext.js";
 import type { ConnectionStatus } from "../hooks/useMonitoringDashboard.js";
 import { listIncidents } from "../api/monitoring.js";
 import { SegmentChain } from "../components/SegmentChain.js";
@@ -63,7 +64,9 @@ function formatDuration(seconds: number | null): string {
 
 export function DashboardPage() {
   const { nodes, activeIncidents, monitoringLoading: loading, monitoringError: error, connectionStatus } = useTopology();
+  const { sessions } = useSessions();
   const [recentIncidents, setRecentIncidents] = useState<IncidentResponseDTO[]>([]);
+  const activeSessions = useMemo(() => sessions.filter((session) => session.status === "ACTIVA"), [sessions]);
 
   useEffect(() => {
     listIncidents()
@@ -102,7 +105,7 @@ export function DashboardPage() {
             <KpiCard label="Tramos operativos" value={segmentCounts.operational} />
             <KpiCard label="Tramos afectados" value={segmentCounts.affected} />
             <KpiCard label="Incidentes activos" value={activeIncidents.length} />
-            <KpiCard label="Sesiones remotas activas" value={0} hint="Módulo en desarrollo" />
+            <KpiCard label="Sesiones remotas activas" value={activeSessions.length} />
           </section>
 
           <section className="flex flex-col gap-3">
@@ -154,9 +157,23 @@ export function DashboardPage() {
 
           <section className="flex flex-col gap-3">
             <h2 className="section-label">Sesiones remotas</h2>
-            <div className="empty-state">
-              No hay sesiones activas registradas — el módulo de acceso remoto está en desarrollo.
-            </div>
+            {activeSessions.length === 0 ? (
+              <div className="empty-state">No hay sesiones remotas activas en este momento.</div>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {activeSessions.map((session) => (
+                  <li key={session.id} className="card flex items-center justify-between gap-4 px-4 py-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium text-ink">{session.userName}</span>
+                      <span className="text-xs text-ink-muted">{session.equipoNombre}</span>
+                    </div>
+                    <span className="text-xs text-status-up">
+                      Desde {new Date(session.startedAt).toLocaleTimeString("es-BO")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </section>
         </>
       )}
