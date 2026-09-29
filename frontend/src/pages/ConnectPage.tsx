@@ -78,19 +78,11 @@ export function ConnectPage() {
   if (flow === "loading") return <p className="text-ink-muted">Verificando acceso…</p>;
 
   if (flow === "not-allowed") {
-    return (
-      <div className="rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down">
-        No tienes autorización para conectarte a este equipo.
-      </div>
-    );
+    return <div className="alert-danger">No tienes autorización para conectarte a este equipo.</div>;
   }
 
   if (flow === "error" || !node) {
-    return (
-      <div className="rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down">
-        No se pudo cargar la información del equipo.
-      </div>
-    );
+    return <div className="alert-danger">No se pudo cargar la información del equipo.</div>;
   }
 
   return (
@@ -104,7 +96,7 @@ export function ConnectPage() {
       </button>
 
       <div>
-        <h1 className="text-xl font-semibold text-ink">Conectar a {node.name}</h1>
+        <h1 className="page-title">Conectar a {node.name}</h1>
         <p className="font-mono text-sm text-ink-muted">{node.ip}</p>
       </div>
 
@@ -113,24 +105,20 @@ export function ConnectPage() {
       </span>
 
       {flow === "unavailable" && (
-        <div className="rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down">
+        <div className="alert-danger">
           Este equipo está caído en este momento. No es posible iniciar una conexión.
         </div>
       )}
 
       {flow === "ready" && (
-        <button
-          type="button"
-          onClick={startConnection}
-          className="w-fit rounded-md bg-accent px-4 py-2 text-sm font-medium text-surface transition-colors duration-200 hover:bg-accent-strong active:scale-[0.98]"
-        >
+        <button type="button" onClick={startConnection} className="btn btn-primary w-fit px-4">
           Conectar
         </button>
       )}
 
       {(flow === "checking" || flow === "tunneling") && (
-        <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-raised px-4 py-3 text-ink-muted">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-status-degraded" />
+        <div className="card flex items-center gap-3 px-4 py-3 text-ink-muted">
+          <span className="status-dot h-2 w-2 animate-pulse bg-status-degraded" />
           {flow === "checking"
             ? "Verificando disponibilidad del equipo…"
             : "Estableciendo túnel seguro (certificado temporal)…"}
@@ -138,10 +126,10 @@ export function ConnectPage() {
       )}
 
       {flow === "connected" && (
-        <div className="flex flex-col gap-4 rounded-lg border border-status-up/40 bg-status-up/10 p-5">
+        <div className="alert-success flex flex-col gap-4 p-5">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-2 text-sm font-medium text-status-up">
-              <span className="h-2 w-2 rounded-full bg-status-up" />
+              <span className="status-dot h-2 w-2 bg-status-up" />
               Conectado
             </span>
             <span className="font-mono text-sm text-ink">{timeLabel}</span>
@@ -156,11 +144,7 @@ export function ConnectPage() {
             ssh -L 102:localhost:{mockPort} tunnel@vps.tu-dominio.com
           </code>
 
-          <button
-            type="button"
-            onClick={disconnect}
-            className="w-fit rounded-md border border-border px-3 py-2 text-sm text-ink-muted transition-colors duration-200 hover:border-status-down hover:text-status-down"
-          >
+          <button type="button" onClick={disconnect} className="btn btn-danger-outline w-fit">
             Desconectar
           </button>
         </div>
