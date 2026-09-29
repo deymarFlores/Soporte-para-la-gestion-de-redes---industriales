@@ -22,11 +22,11 @@ export function NetworkDashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold text-ink">Estado de la red</h1>
-          <p className="text-sm text-ink-muted">Enlace remoto — planta</p>
+          <h1 className="page-title">Estado de la red</h1>
+          <p className="page-subtitle">Enlace remoto — planta</p>
         </div>
         <span className="inline-flex items-center gap-1.5 text-xs text-ink-muted">
-          <span className={`h-1.5 w-1.5 rounded-full ${CONNECTION_COLOR[connectionStatus]}`} />
+          <span className={`status-dot h-1.5 w-1.5 ${CONNECTION_COLOR[connectionStatus]}`} />
           {CONNECTION_LABEL[connectionStatus]}
         </span>
       </div>
@@ -34,20 +34,18 @@ export function NetworkDashboardPage() {
       {loading ? (
         <p className="text-ink-muted">Cargando estado del enlace…</p>
       ) : error ? (
-        <div className="rounded-lg border border-status-down/40 bg-status-down/10 px-4 py-3 text-status-down">
-          No se pudo cargar el estado del enlace: {error}
-        </div>
+        <div className="alert-danger">No se pudo cargar el estado del enlace: {error}</div>
       ) : (
         <>
           <OverallStatusBanner incidents={activeIncidents} />
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-ink-muted">Tramos del enlace</h2>
+            <h2 className="section-label">Tramos del enlace</h2>
             <SegmentChain nodes={nodes} />
           </section>
 
           <section className="flex flex-col gap-3">
-            <h2 className="text-sm font-medium uppercase tracking-wide text-ink-muted">Incidentes activos</h2>
+            <h2 className="section-label">Incidentes activos</h2>
             <IncidentPanel incidents={activeIncidents} nodes={nodes} />
           </section>
         </>
