@@ -4,7 +4,7 @@ import { useTopology } from "../../context/TopologyContext.js";
 import { canManageInfrastructure } from "../../types/auth.js";
 import { Modal } from "../../components/Modal.js";
 import { StatusBadge } from "../../components/StatusBadge.js";
-import type { EquipoInput, EquipoView } from "../../types/topology.js";
+import type { EquipoInput, EquipoView, SitioRecord } from "../../types/topology.js";
 import type { NodeType } from "../../types/monitoring.js";
 
 const TIPO_LABEL: Record<NodeType, string> = {
@@ -13,23 +13,27 @@ const TIPO_LABEL: Record<NodeType, string> = {
   DEVICE: "Dispositivo",
 };
 
-const EMPTY_FORM: EquipoInput = {
-  nombre: "",
-  tipo: "DEVICE",
-  ip: "",
-  sitio: "Planta Principal",
-  descripcion: "",
-  parametrosMonitoreo: "ICMP cada 30s",
-  habilitado: true,
-  accesoRemotoHabilitado: false,
-};
+function emptyForm(defaultSitioId: string): EquipoInput {
+  return {
+    nombre: "",
+    tipo: "DEVICE",
+    ip: "",
+    sitioId: defaultSitioId,
+    descripcion: "",
+    parametrosMonitoreo: "ICMP cada 30s",
+    habilitado: true,
+    accesoRemotoHabilitado: false,
+  };
+}
 
 function EquipoForm({
   initial,
+  sitios,
   onSubmit,
   onCancel,
 }: {
   initial: EquipoInput;
+  sitios: SitioRecord[];
   onSubmit: (data: EquipoInput) => void;
   onCancel: () => void;
 }) {
@@ -89,13 +93,19 @@ function EquipoForm({
         <label className="field-label" htmlFor="sitio">
           Sitio
         </label>
-        <input
+        <select
           id="sitio"
           required
           className="input"
-          value={form.sitio}
-          onChange={(event) => setForm({ ...form, sitio: event.target.value })}
-        />
+          value={form.sitioId}
+          onChange={(event) => setForm({ ...form, sitioId: event.target.value })}
+        >
+          {sitios.map((sitio) => (
+            <option key={sitio.id} value={sitio.id}>
+              {sitio.nombre}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -146,7 +156,7 @@ function EquipoForm({
 
 export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
   const { user } = useAuth();
-  const { equipos, activeIncidents, createEquipo, updateEquipo, removeEquipo } = useTopology();
+  const { equipos, sitios, activeIncidents, createEquipo, updateEquipo, removeEquipo } = useTopology();
   const canManage = !readOnly && user !== null && canManageInfrastructure(user.role);
 
   const [search, setSearch] = useState("");
@@ -157,8 +167,6 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
   const [formOpen, setFormOpen] = useState<null | "create" | string>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
 
-  const sitios = useMemo(() => Array.from(new Set(equipos.map((equipo) => equipo.sitio))), [equipos]);
-
   const filtered = useMemo(() => {
     return equipos.filter((equipo) => {
       const matchesSearch =
@@ -166,7 +174,7 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
         equipo.nombre.toLowerCase().includes(search.toLowerCase()) ||
         equipo.ip.toLowerCase().includes(search.toLowerCase());
       const matchesTipo = tipoFilter === "" || equipo.tipo === tipoFilter;
-      const matchesSitio = sitioFilter === "" || equipo.sitio === sitioFilter;
+      const matchesSitio = sitioFilter === "" || equipo.sitioId === sitioFilter;
       const matchesEstado = estadoFilter === "" || equipo.estado === estadoFilter;
       return matchesSearch && matchesTipo && matchesSitio && matchesEstado;
     });
@@ -211,8 +219,8 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
         <select className="input w-40" value={sitioFilter} onChange={(event) => setSitioFilter(event.target.value)}>
           <option value="">Todos los sitios</option>
           {sitios.map((sitio) => (
-            <option key={sitio} value={sitio}>
-              {sitio}
+            <option key={sitio.id} value={sitio.id}>
+              {sitio.nombre}
             </option>
           ))}
         </select>
@@ -247,7 +255,7 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
                   <td className="px-4 py-3 text-ink">{equipo.nombre}</td>
                   <td className="px-4 py-3 text-ink-muted">{TIPO_LABEL[equipo.tipo]}</td>
                   <td className="px-4 py-3 font-mono text-xs text-ink-muted">{equipo.ip}</td>
-                  <td className="px-4 py-3 text-ink-muted">{equipo.sitio}</td>
+                  <td className="px-4 py-3 text-ink-muted">{equipo.sitioNombre}</td>
                   <td className="px-4 py-3">
                     {equipo.estado === "SIN_MONITOREO" ? (
                       <span className="text-xs text-ink-muted">Sin monitoreo</span>
@@ -310,14 +318,15 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
                     nombre: editingEquipo.nombre,
                     tipo: editingEquipo.tipo,
                     ip: editingEquipo.ip,
-                    sitio: editingEquipo.sitio,
+                    sitioId: editingEquipo.sitioId,
                     descripcion: editingEquipo.descripcion,
                     parametrosMonitoreo: editingEquipo.parametrosMonitoreo,
                     habilitado: editingEquipo.habilitado,
                     accesoRemotoHabilitado: editingEquipo.accesoRemotoHabilitado,
                   }
-                : EMPTY_FORM
+                : emptyForm(sitios[0]?.id ?? "")
             }
+            sitios={sitios}
             onSubmit={handleSubmit}
             onCancel={() => setFormOpen(null)}
           />
@@ -340,7 +349,7 @@ function EquipoDetail({ equipo, incidentCount }: { equipo: EquipoView; incidentC
         [
           ["Tipo", TIPO_LABEL[equipo.tipo]],
           ["IP / host", equipo.ip],
-          ["Sitio", equipo.sitio],
+          ["Sitio", equipo.sitioNombre],
           ["Estado", equipo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : equipo.estado],
           [
             "Última comprobación",
