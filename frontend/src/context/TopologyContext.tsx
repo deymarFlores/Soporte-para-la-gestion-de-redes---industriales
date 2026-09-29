@@ -1,7 +1,17 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useMonitoringDashboard, type ConnectionStatus } from "../hooks/useMonitoringDashboard.js";
+import { generateId } from "../utils/id.js";
 import type { IncidentResponseDTO, NodeResponseDTO } from "../types/monitoring.js";
-import type { EquipoInput, EquipoRecord, EquipoView, TramoInput, TramoRecord, TramoView } from "../types/topology.js";
+import type {
+  EquipoInput,
+  EquipoRecord,
+  EquipoView,
+  SitioInput,
+  SitioRecord,
+  TramoInput,
+  TramoRecord,
+  TramoView,
+} from "../types/topology.js";
 
 interface TopologyContextValue {
   nodes: NodeResponseDTO[];
@@ -10,8 +20,13 @@ interface TopologyContextValue {
   monitoringLoading: boolean;
   monitoringError: string | null;
 
+  sitios: SitioRecord[];
   equipos: EquipoView[];
   tramos: TramoView[];
+
+  createSitio: (data: SitioInput) => void;
+  updateSitio: (id: string, data: Partial<SitioInput>) => void;
+  removeSitio: (id: string) => void;
 
   createEquipo: (data: EquipoInput) => void;
   updateEquipo: (id: string, data: Partial<EquipoInput>) => void;
@@ -24,12 +39,20 @@ interface TopologyContextValue {
 
 const TopologyContext = createContext<TopologyContextValue | null>(null);
 
-function generateId(prefix: string): string {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
-}
+const DEFAULT_SITIO_ID = "sitio-planta-principal";
 
 export function TopologyProvider({ children }: { children: ReactNode }) {
   const { nodes, activeIncidents, connectionStatus, loading, error } = useMonitoringDashboard();
+  const [sitioRecords, setSitioRecords] = useState<SitioRecord[]>([
+    {
+      id: DEFAULT_SITIO_ID,
+      nombre: "Planta Principal",
+      ubicacion: "",
+      descripcion: "",
+      habilitado: true,
+      createdAt: new Date().toISOString(),
+    },
+  ]);
   const [equipoRecords, setEquipoRecords] = useState<EquipoRecord[]>([]);
   const [tramoRecords, setTramoRecords] = useState<TramoRecord[]>([]);
   const seeded = useRef(false);
@@ -43,7 +66,7 @@ export function TopologyProvider({ children }: { children: ReactNode }) {
       nombre: node.name,
       tipo: node.type,
       ip: node.ip ?? "",
-      sitio: "Planta Principal",
+      sitioId: DEFAULT_SITIO_ID,
       descripcion: "",
       parametrosMonitoreo: "ICMP cada 30s",
       habilitado: true,
@@ -78,14 +101,16 @@ export function TopologyProvider({ children }: { children: ReactNode }) {
     () =>
       equipoRecords.map((record) => {
         const backendNode = nodes.find((node) => node.ip && node.ip === record.ip);
+        const sitio = sitioRecords.find((candidate) => candidate.id === record.sitioId);
         return {
           ...record,
           estado: backendNode ? backendNode.currentStatus : "SIN_MONITOREO",
           ultimaComprobacion: backendNode?.lastCheckedAt ?? null,
           vinculadoBackend: Boolean(backendNode),
+          sitioNombre: sitio?.nombre ?? "Sin sitio",
         };
       }),
-    [equipoRecords, nodes]
+    [equipoRecords, nodes, sitioRecords]
   );
 
   const tramos = useMemo<TramoView[]>(
@@ -110,8 +135,15 @@ export function TopologyProvider({ children }: { children: ReactNode }) {
     monitoringLoading: loading,
     monitoringError: error,
 
+    sitios: sitioRecords,
     equipos,
     tramos,
+
+    createSitio: (data) =>
+      setSitioRecords((prev) => [...prev, { ...data, id: generateId("sitio"), createdAt: new Date().toISOString() }]),
+    updateSitio: (id, data) =>
+      setSitioRecords((prev) => prev.map((sitio) => (sitio.id === id ? { ...sitio, ...data } : sitio))),
+    removeSitio: (id) => setSitioRecords((prev) => prev.filter((sitio) => sitio.id !== id)),
 
     createEquipo: (data) =>
       setEquipoRecords((prev) => [
