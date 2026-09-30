@@ -92,7 +92,7 @@ export default class ReportStatusUseCase {
   ): Promise<void> {
     const previousStatus = node.currentStatus;
 
-    const activeIncidentOnNode = await this.incidentRepository.findActiveByNodeId(node.id);
+    const activeIncidentOnNode = await this.incidentRepository.findActiveByNodeId(node.id as string);
     const activeIncidentOnParent = node.parentId
       ? await this.incidentRepository.findActiveByNodeId(node.parentId)
       : null;
@@ -106,7 +106,7 @@ export default class ReportStatusUseCase {
 
     await this.statusEventRepository.create(
       new StatusEventEntity({
-        nodeId: node.id,
+        nodeId: node.id as string,
         status: newStatus,
         latencyMs: acc.latencyMs ?? null,
         packetLossPct: acc.packetLossPct ?? null,
@@ -119,7 +119,7 @@ export default class ReportStatusUseCase {
     if (action.kind === "OPEN_INCIDENT") {
       const incident = await this.incidentRepository.create(
         new IncidentEntity({
-          nodeId: node.id,
+          nodeId: node.id as string,
           type: action.incidentType,
           rootIncidentId: action.rootIncidentId,
           startedAt: now,

@@ -36,12 +36,12 @@ export default class CheckHeartbeatsUseCase {
 
       if (elapsedSeconds <= this.timeoutSeconds) continue;
 
-      const activeIncident = await this.incidentRepository.findActiveByNodeId(gateway.id);
+      const activeIncident = await this.incidentRepository.findActiveByNodeId(gateway.id as string);
       if (activeIncident) continue;
 
       const incident = await this.incidentRepository.create(
         new IncidentEntity({
-          nodeId: gateway.id,
+          nodeId: gateway.id as string,
           type: INCIDENT_TYPE.HEARTBEAT_TIMEOUT,
           startedAt: now,
         })
