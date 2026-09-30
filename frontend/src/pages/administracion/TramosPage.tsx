@@ -191,14 +191,37 @@ export function TramosPage() {
   const canManage = user !== null && canManageInfrastructure(user.role);
 
   const [formOpen, setFormOpen] = useState<null | "create" | string>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const equipoOptions = useMemo(() => equipos.map((equipo) => ({ id: equipo.id, nombre: equipo.nombre })), [equipos]);
   const editingTramo = typeof formOpen === "string" ? tramos.find((tramo) => tramo.id === formOpen) : null;
 
-  function handleSubmit(data: TramoInput): void {
-    if (editingTramo) updateTramo(editingTramo.id, data);
-    else createTramo(data);
-    setFormOpen(null);
+  async function handleSubmit(data: TramoInput): Promise<void> {
+    try {
+      if (editingTramo) await updateTramo(editingTramo.id, data);
+      else await createTramo(data);
+      setActionError(null);
+      setFormOpen(null);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleToggleHabilitado(tramo: TramoView): Promise<void> {
+    try {
+      await updateTramo(tramo.id, { habilitado: !tramo.habilitado });
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleDelete(tramo: TramoView): Promise<void> {
+    if (!window.confirm(`¿Eliminar el tramo "${tramo.nombre}"?`)) return;
+    try {
+      await removeTramo(tramo.id);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
   }
 
   function ultimaComprobacion(tramo: TramoView): string {
@@ -266,7 +289,7 @@ export function TramosPage() {
                           tramo.estado === "UP" ? "bg-status-up" : tramo.estado === "DOWN" ? "bg-status-down" : "bg-status-unknown"
                         }`}
                       />
-                      {tramo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : tramo.estado}
+                      {tramo.estado}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-muted">{ultimaComprobacion(tramo)}</td>
@@ -282,16 +305,14 @@ export function TramosPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => updateTramo(tramo.id, { habilitado: !tramo.habilitado })}
+                          onClick={() => void handleToggleHabilitado(tramo)}
                           className="text-xs text-ink-muted hover:underline"
                         >
                           {tramo.habilitado ? "Deshabilitar" : "Habilitar"}
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (window.confirm(`¿Eliminar el tramo "${tramo.nombre}"?`)) removeTramo(tramo.id);
-                          }}
+                          onClick={() => void handleDelete(tramo)}
                           className="text-xs text-status-down hover:underline"
                         >
                           Eliminar
@@ -307,6 +328,8 @@ export function TramosPage() {
           </table>
         </div>
       )}
+
+      {actionError && <div className="alert-danger">{actionError}</div>}
 
       {formOpen && (
         <Modal title={editingTramo ? "Editar tramo" : "Nuevo tramo"} onClose={() => setFormOpen(null)}>
