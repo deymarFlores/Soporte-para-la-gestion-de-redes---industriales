@@ -16,23 +16,19 @@ export interface EquipoRecord {
   nombre: string;
   tipo: NodeType;
   ip: string;
-  sitioId: string;
+  sitioId: string | null;
   descripcion: string;
   parametrosMonitoreo: string;
   habilitado: boolean;
   accesoRemotoHabilitado: boolean;
-  createdAt: string;
+  parentId: string | null;
 }
 
-export type EquipoInput = Omit<EquipoRecord, "id" | "createdAt">;
-
-/** Estado real tomado del backend cuando el equipo coincide con un nodo monitoreado por IP. */
-export type EstadoOperativo = NodeStatus | "SIN_MONITOREO";
+export type EquipoInput = Omit<EquipoRecord, "id" | "parentId">;
 
 export interface EquipoView extends EquipoRecord {
-  estado: EstadoOperativo;
+  estado: NodeStatus;
   ultimaComprobacion: string | null;
-  vinculadoBackend: boolean;
   sitioNombre: string;
 }
 
@@ -47,13 +43,12 @@ export interface TramoRecord {
   umbralLatenciaMs: number;
   umbralPerdidaPct: number;
   habilitado: boolean;
-  createdAt: string;
 }
 
-export type TramoInput = Omit<TramoRecord, "id" | "createdAt">;
+export type TramoInput = Omit<TramoRecord, "id">;
 
 export interface TramoView extends TramoRecord {
-  estado: EstadoOperativo;
+  estado: NodeStatus;
   origenNombre: string;
   destinoNombre: string;
 }
