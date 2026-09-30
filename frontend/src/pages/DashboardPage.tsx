@@ -64,9 +64,8 @@ function formatDuration(seconds: number | null): string {
 
 export function DashboardPage() {
   const { nodes, activeIncidents, monitoringLoading: loading, monitoringError: error, connectionStatus } = useTopology();
-  const { sessions } = useSessions();
+  const { activeSessions } = useSessions();
   const [recentIncidents, setRecentIncidents] = useState<IncidentResponseDTO[]>([]);
-  const activeSessions = useMemo(() => sessions.filter((session) => session.status === "ACTIVA"), [sessions]);
 
   useEffect(() => {
     listIncidents()
