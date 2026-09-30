@@ -97,7 +97,7 @@ function EquipoForm({
           id="sitio"
           required
           className="input"
-          value={form.sitioId}
+          value={form.sitioId ?? ""}
           onChange={(event) => setForm({ ...form, sitioId: event.target.value })}
         >
           {sitios.map((sitio) => (
@@ -166,6 +166,7 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
 
   const [formOpen, setFormOpen] = useState<null | "create" | string>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     return equipos.filter((equipo) => {
@@ -183,10 +184,32 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
   const editingEquipo = typeof formOpen === "string" ? equipos.find((equipo) => equipo.id === formOpen) : null;
   const detailEquipo = detailId ? equipos.find((equipo) => equipo.id === detailId) : null;
 
-  function handleSubmit(data: EquipoInput): void {
-    if (editingEquipo) updateEquipo(editingEquipo.id, data);
-    else createEquipo(data);
-    setFormOpen(null);
+  async function handleSubmit(data: EquipoInput): Promise<void> {
+    try {
+      if (editingEquipo) await updateEquipo(editingEquipo.id, data);
+      else await createEquipo(data);
+      setActionError(null);
+      setFormOpen(null);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleToggleHabilitado(equipo: EquipoView): Promise<void> {
+    try {
+      await updateEquipo(equipo.id, { habilitado: !equipo.habilitado });
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleDelete(equipo: EquipoView): Promise<void> {
+    if (!window.confirm(`¿Eliminar ${equipo.nombre}?`)) return;
+    try {
+      await removeEquipo(equipo.id);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
   }
 
   return (
@@ -229,7 +252,6 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
           <option value="UP">Disponible</option>
           <option value="DOWN">Caído</option>
           <option value="UNKNOWN">Sin datos</option>
-          <option value="SIN_MONITOREO">Sin monitoreo</option>
         </select>
       </div>
 
@@ -257,11 +279,7 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
                   <td className="px-4 py-3 font-mono text-xs text-ink-muted">{equipo.ip}</td>
                   <td className="px-4 py-3 text-ink-muted">{equipo.sitioNombre}</td>
                   <td className="px-4 py-3">
-                    {equipo.estado === "SIN_MONITOREO" ? (
-                      <span className="text-xs text-ink-muted">Sin monitoreo</span>
-                    ) : (
-                      <StatusBadge status={equipo.estado} />
-                    )}
+                    <StatusBadge status={equipo.estado} />
                   </td>
                   <td className="px-4 py-3 text-xs text-ink-muted">
                     {equipo.ultimaComprobacion
@@ -284,16 +302,14 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => updateEquipo(equipo.id, { habilitado: !equipo.habilitado })}
+                            onClick={() => void handleToggleHabilitado(equipo)}
                             className="text-xs text-ink-muted hover:underline"
                           >
                             {equipo.habilitado ? "Deshabilitar" : "Habilitar"}
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
-                              if (window.confirm(`¿Eliminar ${equipo.nombre}?`)) removeEquipo(equipo.id);
-                            }}
+                            onClick={() => void handleDelete(equipo)}
                             className="text-xs text-status-down hover:underline"
                           >
                             Eliminar
@@ -308,6 +324,8 @@ export function EquiposPage({ readOnly = false }: { readOnly?: boolean }) {
           </table>
         </div>
       )}
+
+      {actionError && <div className="alert-danger">{actionError}</div>}
 
       {formOpen && (
         <Modal title={editingEquipo ? "Editar equipo" : "Nuevo equipo"} onClose={() => setFormOpen(null)}>
@@ -350,7 +368,7 @@ function EquipoDetail({ equipo, incidentCount }: { equipo: EquipoView; incidentC
           ["Tipo", TIPO_LABEL[equipo.tipo]],
           ["IP / host", equipo.ip],
           ["Sitio", equipo.sitioNombre],
-          ["Estado", equipo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : equipo.estado],
+          ["Estado", equipo.estado],
           [
             "Última comprobación",
             equipo.ultimaComprobacion
