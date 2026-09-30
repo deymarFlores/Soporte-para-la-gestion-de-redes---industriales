@@ -1,6 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useMonitoringDashboard, type ConnectionStatus } from "../hooks/useMonitoringDashboard.js";
-import { generateId } from "../utils/id.js";
+import { listSitios, createSitio as createSitioApi, updateSitio as updateSitioApi, deleteSitio as deleteSitioApi } from "../api/sites.js";
+import {
+  listEquipos,
+  createEquipo as createEquipoApi,
+  updateEquipo as updateEquipoApi,
+  deleteEquipo as deleteEquipoApi,
+  toEquipoRecord,
+} from "../api/nodes.js";
+import {
+  listTramos,
+  createTramo as createTramoApi,
+  updateTramo as updateTramoApi,
+  deleteTramo as deleteTramoApi,
+} from "../api/segments.js";
 import type { IncidentResponseDTO, NodeResponseDTO } from "../types/monitoring.js";
 import type {
   EquipoInput,
@@ -23,94 +36,70 @@ interface TopologyContextValue {
   sitios: SitioRecord[];
   equipos: EquipoView[];
   tramos: TramoView[];
+  topologyLoading: boolean;
+  topologyError: string | null;
 
-  createSitio: (data: SitioInput) => void;
-  updateSitio: (id: string, data: Partial<SitioInput>) => void;
-  removeSitio: (id: string) => void;
+  createSitio: (data: SitioInput) => Promise<void>;
+  updateSitio: (id: string, data: Partial<SitioInput>) => Promise<void>;
+  removeSitio: (id: string) => Promise<void>;
 
-  createEquipo: (data: EquipoInput) => void;
-  updateEquipo: (id: string, data: Partial<EquipoInput>) => void;
-  removeEquipo: (id: string) => void;
+  createEquipo: (data: EquipoInput) => Promise<void>;
+  updateEquipo: (id: string, data: Partial<EquipoInput>) => Promise<void>;
+  removeEquipo: (id: string) => Promise<void>;
 
-  createTramo: (data: TramoInput) => void;
-  updateTramo: (id: string, data: Partial<TramoInput>) => void;
-  removeTramo: (id: string) => void;
+  createTramo: (data: TramoInput) => Promise<void>;
+  updateTramo: (id: string, data: Partial<TramoInput>) => Promise<void>;
+  removeTramo: (id: string) => Promise<void>;
 }
 
 const TopologyContext = createContext<TopologyContextValue | null>(null);
 
-const DEFAULT_SITIO_ID = "sitio-planta-principal";
-
 export function TopologyProvider({ children }: { children: ReactNode }) {
-  const { nodes, activeIncidents, connectionStatus, loading, error } = useMonitoringDashboard();
-  const [sitioRecords, setSitioRecords] = useState<SitioRecord[]>([
-    {
-      id: DEFAULT_SITIO_ID,
-      nombre: "Planta Principal",
-      ubicacion: "",
-      descripcion: "",
-      habilitado: true,
-      createdAt: new Date().toISOString(),
-    },
-  ]);
+  const {
+    nodes,
+    activeIncidents,
+    connectionStatus,
+    loading: monitoringLoading,
+    error: monitoringError,
+  } = useMonitoringDashboard();
+
+  const [sitios, setSitios] = useState<SitioRecord[]>([]);
   const [equipoRecords, setEquipoRecords] = useState<EquipoRecord[]>([]);
   const [tramoRecords, setTramoRecords] = useState<TramoRecord[]>([]);
-  const seeded = useRef(false);
+  const [topologyLoading, setTopologyLoading] = useState(true);
+  const [topologyError, setTopologyError] = useState<string | null>(null);
+
+  async function refreshAll(): Promise<void> {
+    try {
+      const [sitiosData, equiposData, tramosData] = await Promise.all([listSitios(), listEquipos(), listTramos()]);
+      setSitios(sitiosData);
+      setEquipoRecords(equiposData.map(toEquipoRecord));
+      setTramoRecords(tramosData);
+      setTopologyError(null);
+    } catch (error) {
+      setTopologyError((error as Error).message);
+    } finally {
+      setTopologyLoading(false);
+    }
+  }
 
   useEffect(() => {
-    if (seeded.current || loading || nodes.length === 0) return;
-    seeded.current = true;
-
-    const seededEquipos: EquipoRecord[] = nodes.map((node) => ({
-      id: node.id,
-      nombre: node.name,
-      tipo: node.type,
-      ip: node.ip ?? "",
-      sitioId: DEFAULT_SITIO_ID,
-      descripcion: "",
-      parametrosMonitoreo: "ICMP cada 30s",
-      habilitado: true,
-      accesoRemotoHabilitado: node.type === "PLC",
-      createdAt: new Date().toISOString(),
-    }));
-
-    const seededTramos: TramoRecord[] = nodes
-      .filter((node) => node.parentId)
-      .map((node) => {
-        const origenNombre = nodes.find((candidate) => candidate.id === node.parentId)?.name ?? "?";
-        return {
-          id: generateId("tramo"),
-          nombre: `${origenNombre} → ${node.name}`,
-          origenEquipoId: node.parentId as string,
-          destinoEquipoId: node.id,
-          tipoConexion: "Ethernet",
-          metodoMonitoreo: "ICMP",
-          intervaloComprobacionSegundos: 30,
-          umbralLatenciaMs: 200,
-          umbralPerdidaPct: 5,
-          habilitado: true,
-          createdAt: new Date().toISOString(),
-        };
-      });
-
-    setEquipoRecords(seededEquipos);
-    setTramoRecords(seededTramos);
-  }, [nodes, loading]);
+    void refreshAll();
+  }, []);
 
   const equipos = useMemo<EquipoView[]>(
     () =>
       equipoRecords.map((record) => {
-        const backendNode = nodes.find((node) => node.ip && node.ip === record.ip);
-        const sitio = sitioRecords.find((candidate) => candidate.id === record.sitioId);
+        const liveNode = nodes.find((node) => node.id === record.id);
+        const sitio = sitios.find((candidate) => candidate.id === record.sitioId);
         return {
           ...record,
-          estado: backendNode ? backendNode.currentStatus : "SIN_MONITOREO",
-          ultimaComprobacion: backendNode?.lastCheckedAt ?? null,
-          vinculadoBackend: Boolean(backendNode),
+          estado: liveNode?.currentStatus ?? "UNKNOWN",
+          ultimaComprobacion: liveNode?.lastCheckedAt ?? null,
           sitioNombre: sitio?.nombre ?? "Sin sitio",
         };
       }),
-    [equipoRecords, nodes, sitioRecords]
+    [equipoRecords, nodes, sitios]
   );
 
   const tramos = useMemo<TramoView[]>(
@@ -120,7 +109,7 @@ export function TopologyProvider({ children }: { children: ReactNode }) {
         const destino = equipos.find((equipo) => equipo.id === record.destinoEquipoId);
         return {
           ...record,
-          estado: destino?.estado ?? "SIN_MONITOREO",
+          estado: destino?.estado ?? "UNKNOWN",
           origenNombre: origen?.nombre ?? "Desconocido",
           destinoNombre: destino?.nombre ?? "Desconocido",
         };
@@ -132,36 +121,53 @@ export function TopologyProvider({ children }: { children: ReactNode }) {
     nodes,
     activeIncidents,
     connectionStatus,
-    monitoringLoading: loading,
-    monitoringError: error,
+    monitoringLoading,
+    monitoringError,
 
-    sitios: sitioRecords,
+    sitios,
     equipos,
     tramos,
+    topologyLoading,
+    topologyError,
 
-    createSitio: (data) =>
-      setSitioRecords((prev) => [...prev, { ...data, id: generateId("sitio"), createdAt: new Date().toISOString() }]),
-    updateSitio: (id, data) =>
-      setSitioRecords((prev) => prev.map((sitio) => (sitio.id === id ? { ...sitio, ...data } : sitio))),
-    removeSitio: (id) => setSitioRecords((prev) => prev.filter((sitio) => sitio.id !== id)),
-
-    createEquipo: (data) =>
-      setEquipoRecords((prev) => [
-        ...prev,
-        { ...data, id: generateId("equipo"), createdAt: new Date().toISOString() },
-      ]),
-    updateEquipo: (id, data) =>
-      setEquipoRecords((prev) => prev.map((equipo) => (equipo.id === id ? { ...equipo, ...data } : equipo))),
-    removeEquipo: (id) => {
-      setEquipoRecords((prev) => prev.filter((equipo) => equipo.id !== id));
-      setTramoRecords((prev) => prev.filter((tramo) => tramo.origenEquipoId !== id && tramo.destinoEquipoId !== id));
+    createSitio: async (data) => {
+      await createSitioApi(data);
+      await refreshAll();
+    },
+    updateSitio: async (id, data) => {
+      await updateSitioApi(id, data);
+      await refreshAll();
+    },
+    removeSitio: async (id) => {
+      await deleteSitioApi(id);
+      await refreshAll();
     },
 
-    createTramo: (data) =>
-      setTramoRecords((prev) => [...prev, { ...data, id: generateId("tramo"), createdAt: new Date().toISOString() }]),
-    updateTramo: (id, data) =>
-      setTramoRecords((prev) => prev.map((tramo) => (tramo.id === id ? { ...tramo, ...data } : tramo))),
-    removeTramo: (id) => setTramoRecords((prev) => prev.filter((tramo) => tramo.id !== id)),
+    createEquipo: async (data) => {
+      await createEquipoApi(data);
+      await refreshAll();
+    },
+    updateEquipo: async (id, data) => {
+      await updateEquipoApi(id, data);
+      await refreshAll();
+    },
+    removeEquipo: async (id) => {
+      await deleteEquipoApi(id);
+      await refreshAll();
+    },
+
+    createTramo: async (data) => {
+      await createTramoApi(data);
+      await refreshAll();
+    },
+    updateTramo: async (id, data) => {
+      await updateTramoApi(id, data);
+      await refreshAll();
+    },
+    removeTramo: async (id) => {
+      await deleteTramoApi(id);
+      await refreshAll();
+    },
   };
 
   return <TopologyContext.Provider value={value}>{children}</TopologyContext.Provider>;
