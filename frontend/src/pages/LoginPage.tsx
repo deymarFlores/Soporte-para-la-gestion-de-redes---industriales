@@ -19,15 +19,20 @@ export function LoginPage() {
 
   async function attemptLogin(loginEmail: string, loginPassword: string): Promise<void> {
     setLoading(true);
-    const success = await login(loginEmail, loginPassword);
-    setLoading(false);
-
-    if (!success) {
-      setError("Correo o contraseña incorrectos");
-      return;
+    try {
+      await login(loginEmail, loginPassword);
+      setError(null);
+      navigate("/", { replace: true });
+    } catch (err) {
+      const isNetworkError = err instanceof TypeError;
+      setError(
+        isNetworkError
+          ? "No se pudo conectar con el servidor. Verifica que el backend esté corriendo."
+          : (err as Error).message
+      );
+    } finally {
+      setLoading(false);
     }
-    setError(null);
-    navigate("/", { replace: true });
   }
 
   function handleSubmit(event: FormEvent) {

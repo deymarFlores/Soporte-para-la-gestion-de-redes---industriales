@@ -7,7 +7,7 @@ const STORAGE_KEY = "auth-user";
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (email: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -38,14 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       login: async (email: string, password: string) => {
-        try {
-          const { token, user: loggedInUser } = await loginApi(email, password);
-          setAuthToken(token);
-          setUser(loggedInUser);
-          return true;
-        } catch {
-          return false;
-        }
+        const { token, user: loggedInUser } = await loginApi(email, password);
+        setAuthToken(token);
+        setUser(loggedInUser);
       },
       logout: () => {
         setAuthToken(null);
