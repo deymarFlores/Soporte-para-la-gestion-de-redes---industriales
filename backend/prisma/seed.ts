@@ -68,28 +68,40 @@ async function main(): Promise<void> {
     });
   }
 
-  const adminEmail = "admin@planta.com";
-  let admin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  if (!admin) {
-    admin = await prisma.user.create({
-      data: {
-        name: "Carla Méndez",
-        email: adminEmail,
-        passwordHash: await bcrypt.hash(adminPassword, 10),
-        role: "ADMINISTRADOR",
-      },
-    });
-  }
+  const demoUsers = [
+    { email: "admin@planta.com", name: "Carla Méndez", role: "ADMINISTRADOR" as const, password: adminPassword, grantPlcAccess: true },
+    { email: "soporte@planta.com", name: "Diego Fernández", role: "SOPORTE" as const, password: "soporte123", grantPlcAccess: true },
+    { email: "consulta@planta.com", name: "Elena Rojas", role: "CONSULTA" as const, password: "consulta123", grantPlcAccess: false },
+  ];
 
-  await prisma.userDeviceAccess.upsert({
-    where: { userId_nodeId: { userId: admin.id, nodeId: plc.id } },
-    update: {},
-    create: { userId: admin.id, nodeId: plc.id },
-  });
+  for (const demoUser of demoUsers) {
+    let user = await prisma.user.findUnique({ where: { email: demoUser.email } });
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          name: demoUser.name,
+          email: demoUser.email,
+          passwordHash: await bcrypt.hash(demoUser.password, 10),
+          role: demoUser.role,
+        },
+      });
+    }
+
+    if (demoUser.grantPlcAccess) {
+      await prisma.userDeviceAccess.upsert({
+        where: { userId_nodeId: { userId: user.id, nodeId: plc.id } },
+        update: {},
+        create: { userId: user.id, nodeId: plc.id },
+      });
+    }
+  }
 
   console.log("Seed completo.");
   console.log("Token del gateway (usar en el header x-agent-token):", gatewayToken);
-  console.log("Login de administrador:", adminEmail, "/", adminPassword);
+  console.log("Logins de demostración:");
+  for (const demoUser of demoUsers) {
+    console.log(` - ${demoUser.role}: ${demoUser.email} / ${demoUser.password}`);
+  }
 }
 
 main()
