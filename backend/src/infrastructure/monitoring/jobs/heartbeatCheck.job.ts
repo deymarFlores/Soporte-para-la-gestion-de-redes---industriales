@@ -1,11 +1,11 @@
 import type CheckHeartbeatsUseCase from "../../../application/monitoring/useCases/checkHeartbeats.useCase.js";
-import { type RealtimeGateway } from "../../realtime/socketServer.js";
+import { type MonitoringBroadcaster } from "../../realtime/MonitoringBroadcaster.js";
 import { NodeMapper } from "../../../domain/monitoring/mappers/node.mapper.js";
 import { IncidentMapper } from "../../../domain/monitoring/mappers/incident.mapper.js";
 
 export function startHeartbeatCheckJob(
   useCase: CheckHeartbeatsUseCase,
-  realtime: RealtimeGateway,
+  broadcaster: MonitoringBroadcaster,
   intervalMs: number
 ): NodeJS.Timeout {
   return setInterval(() => {
@@ -13,7 +13,7 @@ export function startHeartbeatCheckJob(
       .execute()
       .then((result) => {
         if (result.openedIncidents.length === 0) return;
-        realtime.broadcastMonitoringUpdate({
+        broadcaster.broadcastUpdate({
           updatedNodes: NodeMapper.toResponseDTOArray(result.updatedNodes),
           openedIncidents: IncidentMapper.toResponseDTOArray(result.openedIncidents),
           resolvedIncidents: [],
