@@ -12,4 +12,7 @@ export const env = {
   databaseUrl: required("DATABASE_URL"),
   heartbeatTimeoutSeconds: Number(process.env["HEARTBEAT_TIMEOUT_SECONDS"] ?? 90),
   corsOrigin: process.env["CORS_ORIGIN"] ?? "http://localhost:5173",
+  jwtSecret: required("JWT_SECRET"),
+  jwtExpiresIn: process.env["JWT_EXPIRES_IN"] ?? "8h",
+  accessSessionCleanupIntervalMs: Number(process.env["ACCESS_SESSION_CLEANUP_INTERVAL_MS"] ?? 30_000),
 };
