@@ -19,7 +19,7 @@ function remainingLabel(startedAt: string, maxDurationSeconds: number, now: numb
 }
 
 export function SesionesActivasPage() {
-  const { sessions, endSession } = useSessions();
+  const { activeSessions, endSession } = useSessions();
   const { equipos } = useTopology();
   const [now, setNow] = useState(() => Date.now());
 
@@ -28,7 +28,6 @@ export function SesionesActivasPage() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const activas = sessions.filter((session) => session.status === "ACTIVA");
   const sitioDe = (equipoId: string): string => equipos.find((equipo) => equipo.id === equipoId)?.sitioNombre ?? "—";
 
   return (
@@ -38,7 +37,7 @@ export function SesionesActivasPage() {
         <p className="page-subtitle">Conexiones remotas en curso, de todos los usuarios</p>
       </div>
 
-      {activas.length === 0 ? (
+      {activeSessions.length === 0 ? (
         <div className="empty-state">No hay sesiones activas en este momento.</div>
       ) : (
         <div className="card overflow-x-auto">
@@ -55,7 +54,7 @@ export function SesionesActivasPage() {
               </tr>
             </thead>
             <tbody>
-              {activas.map((session) => (
+              {activeSessions.map((session) => (
                 <tr key={session.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 text-ink">{session.userName}</td>
                   <td className="px-4 py-3 text-ink-muted">{session.equipoNombre}</td>
@@ -70,7 +69,7 @@ export function SesionesActivasPage() {
                   <td className="px-4 py-3">
                     <button
                       type="button"
-                      onClick={() => endSession(session.id, "FINALIZADA")}
+                      onClick={() => void endSession(session.id)}
                       className="text-xs text-status-down hover:underline"
                     >
                       Cerrar sesión
