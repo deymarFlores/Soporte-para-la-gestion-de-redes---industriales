@@ -1,12 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthUser } from "../types/auth.js";
-import { useUsers } from "./UsersContext.js";
+import { login as loginApi } from "../api/auth.js";
+import { setAuthToken } from "../api/client.js";
 
 const STORAGE_KEY = "auth-user";
 
 interface AuthContextValue {
   user: AuthUser | null;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
 
@@ -22,7 +23,6 @@ function readStoredUser(): AuthUser | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { authenticate } = useUsers();
   const [user, setUser] = useState<AuthUser | null>(readStoredUser);
 
   useEffect(() => {
@@ -37,15 +37,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
-      login: (email: string, password: string) => {
-        const found = authenticate(email, password);
-        if (!found) return false;
-        setUser(found);
-        return true;
+      login: async (email: string, password: string) => {
+        try {
+          const { token, user: loggedInUser } = await loginApi(email, password);
+          setAuthToken(token);
+          setUser(loggedInUser);
+          return true;
+        } catch {
+          return false;
+        }
       },
-      logout: () => setUser(null),
+      logout: () => {
+        setAuthToken(null);
+        setUser(null);
+      },
     }),
-    [user, authenticate]
+    [user]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
