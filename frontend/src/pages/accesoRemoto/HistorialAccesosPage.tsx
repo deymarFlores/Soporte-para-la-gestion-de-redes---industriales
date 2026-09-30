@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { useSessions } from "../../context/SessionsContext.js";
+import { useEffect, useMemo, useState } from "react";
 import { useTopology } from "../../context/TopologyContext.js";
-import type { SessionStatus } from "../../types/session.js";
+import { listSessionHistory } from "../../api/sessions.js";
+import type { AccessSessionRecord, SessionStatus } from "../../types/session.js";
 
 const STATUS_LABEL: Record<SessionStatus, string> = {
   ACTIVA: "Activa",
@@ -21,12 +21,26 @@ function formatDuration(startedAt: string, endedAt: string | null): string {
 }
 
 export function HistorialAccesosPage() {
-  const { sessions } = useSessions();
   const { equipos } = useTopology();
+  const [sessions, setSessions] = useState<AccessSessionRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [userFilter, setUserFilter] = useState("");
   const [equipoFilter, setEquipoFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | SessionStatus>("");
+
+  useEffect(() => {
+    listSessionHistory()
+      .then((data) => {
+        setSessions(data);
+        setLoading(false);
+      })
+      .catch((err: Error) => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, []);
 
   const sitioDe = (equipoId: string): string => equipos.find((equipo) => equipo.id === equipoId)?.sitioNombre ?? "—";
 
@@ -80,7 +94,11 @@ export function HistorialAccesosPage() {
         </select>
       </div>
 
-      {filtered.length === 0 ? (
+      {loading ? (
+        <p className="text-ink-muted">Cargando historial…</p>
+      ) : error ? (
+        <div className="alert-danger">No se pudo cargar el historial: {error}</div>
+      ) : filtered.length === 0 ? (
         <div className="empty-state">No hay accesos registrados todavía.</div>
       ) : (
         <div className="card overflow-x-auto">
