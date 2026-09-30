@@ -60,7 +60,7 @@ function NodeCard({
         <span className="text-xs uppercase tracking-wide text-ink-muted">{node.equipo.tipo}</span>
         <span className="font-medium text-ink">{node.equipo.nombre}</span>
         <span className="font-mono text-xs text-ink-muted">{node.equipo.ip}</span>
-        <StatusBadge status={node.equipo.estado === "SIN_MONITOREO" ? "UNKNOWN" : node.equipo.estado} />
+        <StatusBadge status={node.equipo.estado} />
       </button>
 
       {node.children.length > 0 && (
@@ -110,7 +110,7 @@ function EquipoDetailPanel({ equipo }: { equipo: EquipoView }) {
       <DetailRow label="Tipo" value={equipo.tipo} />
       <DetailRow label="IP / host" value={equipo.ip} />
       <DetailRow label="Sitio" value={equipo.sitioNombre} />
-      <DetailRow label="Estado" value={equipo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : equipo.estado} />
+      <DetailRow label="Estado" value={equipo.estado} />
       <DetailRow
         label="Última comprobación"
         value={
@@ -129,7 +129,7 @@ function TramoDetailPanel({ tramo }: { tramo: TramoView }) {
       <h2 className="text-base font-semibold text-ink">{tramo.nombre}</h2>
       <DetailRow label="Origen" value={tramo.origenNombre} />
       <DetailRow label="Destino" value={tramo.destinoNombre} />
-      <DetailRow label="Estado" value={tramo.estado === "SIN_MONITOREO" ? "Sin monitoreo" : tramo.estado} />
+      <DetailRow label="Estado" value={tramo.estado} />
       <DetailRow label="Tipo de conexión" value={tramo.tipoConexion} />
       <DetailRow label="Latencia" value="No disponible aún" />
       <DetailRow label="Pérdida de paquetes" value="No disponible aún" />
