@@ -10,19 +10,17 @@ cp .env.example .env   # ajusta VITE_API_URL si el backend no corre en localhost
 npm run dev
 ```
 
-Requiere el backend corriendo (ver `../backend/readme.md`) para tener datos reales; si no hay datos, cada vista muestra el estado de carga/error correspondiente.
+Requiere el backend corriendo (ver `../backend/readme.md`), con la base de datos migrada y semillada (`npm run seed` en `backend/`) para tener las 3 cuentas de demostración.
 
-## Autenticación y roles (mockeados, pero dinámicos)
+## Autenticación y roles (reales)
 
-El backend todavía no tiene login ni permisos, así que se simulan en el frontend — pero no como una lista estática: `src/context/UsersContext.tsx` es el directorio real de cuentas, y `AuthContext` lo consulta para autenticar. Esto significa que crear/editar/deshabilitar un usuario desde **Administración → Usuarios** afecta de verdad quién puede iniciar sesión, no es una vista decorativa.
+El login es real: `POST /api/auth/login` contra el backend, JWT guardado en memoria + `localStorage` (clave `auth-token`) y adjuntado como `Authorization: Bearer` en cada request (`src/api/client.ts`).
 
-Tres roles, según la especificación del producto:
+Tres roles, según la especificación del producto (cuentas creadas por `backend/prisma/seed.ts`):
 
 - **Administrador** (`admin@planta.com` / `admin123`): acceso completo, incluida administración de usuarios/sitios/equipos/tramos.
 - **Soporte** (`soporte@planta.com` / `soporte123`): consulta infraestructura e incidentes, y puede usar acceso remoto autorizado.
 - **Consulta** (`consulta@planta.com` / `consulta123`): solo visualiza monitoreo e incidentes; no ve ni usa acceso remoto, no administra nada.
-
-La sesión activa se guarda en `localStorage` solo para no perderla al recargar; el directorio de usuarios en sí vive en memoria (se reinicia a los 3 usuarios semilla al recargar la página).
 
 ## Navegación
 
@@ -50,26 +48,27 @@ Construida en `src/config/navigation.ts`, el sidebar se arma según el rol del u
 
 | Vista | Estado |
 |---|---|
-| Dashboard | Real (KPIs, cadena del enlace, incidentes recientes y sesiones remotas activas) + honesto en lo que falta (latencia/pérdida/PLC RUN-STOP marcados "no disponible", no inventados) |
-| Monitoreo → Topología | Real (estado) + mock (registro de equipos/tramos) — grafo interactivo con panel de detalle |
+| Dashboard | Real (KPIs, cadena del enlace, incidentes recientes y sesiones remotas activas vía `SessionsContext`) |
+| Monitoreo → Topología | Real — equipos, tramos y estado vienen del backend (`TopologyContext`), grafo interactivo con panel de detalle |
 | Monitoreo → Equipos | Misma tabla que Administración → Equipos, en modo solo lectura |
 | Incidentes | Real (historial completo vía `GET /api/incidents`) |
 | Análisis histórico | Real, calculado a partir del historial de incidentes (disponibilidad diaria, incidentes por equipo, duración acumulada) — latencia/pérdida de paquetes marcadas como no disponibles, el backend no las expone todavía |
-| Acceso remoto → Equipos disponibles | Real (estado) + mock (autorización por `allowedDeviceIps`) |
-| Acceso remoto → Conectar | Simulado completo (verificación → túnel → sesión con expiración y motivo de acceso), pendiente el módulo real de certificados SSH |
-| Acceso remoto → Sesiones activas | Real sobre el store de sesiones mockeado — refleja conexiones iniciadas desde `Conectar`, incluso desde otra pestaña |
-| Acceso remoto → Historial de accesos | Real sobre el mismo store, con filtros |
-| Administración → Equipos | Real (estado, cuando el equipo está vinculado a un nodo del backend) + mock (alta/edición/baja, campos administrativos) |
-| Administración → Tramos | Mock completo — el backend no tiene un concepto de "tramo" como entidad propia todavía |
-| Administración → Sitios | Mock completo — Equipos ya lo referencia por `sitioId`, no por texto libre |
-| Administración → Usuarios | Mock, pero es la fuente real de autenticación del frontend (ver arriba) |
+| Acceso remoto → Equipos disponibles | Real — autorización por `allowedDeviceIds` devuelto en el login |
+| Acceso remoto → Conectar | Sesión real y auditada (`POST /api/acceso-remoto/solicitar` / `finalizar`) con expiración calculada sobre el `startedAt` real; el túnel SSH hacia el equipo sigue siendo una simulación visual |
+| Acceso remoto → Sesiones activas | Real, vía `SessionsContext` (polling cada 5s a `GET /api/acceso-remoto/sesiones`) |
+| Acceso remoto → Historial de accesos | Real, vía `GET /api/acceso-remoto/historial`, con filtros |
+| Administración → Equipos | Real — CRUD completo contra `/api/equipos` |
+| Administración → Tramos | Real — CRUD completo contra `/api/tramos`, sincroniza `parentId` del equipo destino en el backend |
+| Administración → Sitios | Real — CRUD completo contra `/api/sitios` |
+| Administración → Usuarios | Real — CRUD completo contra `/api/usuarios`, incluye asignación de equipos con acceso remoto autorizado |
 
 ## Almacenes compartidos
 
-- **`TopologyContext`**: única conexión en vivo (WebSocket) al backend — el resto de las vistas la consumen vía `useTopology()` en vez de abrir su propia conexión. Al recibir los nodos reales del backend por primera vez, los convierte en registros de **Sitio**, **Equipo** y **Tramo** editables desde Administración. Un equipo creado solo desde el frontend (no registrado en el backend) se muestra con estado "Sin monitoreo" en vez de inventarle uno.
-- **`UsersContext`**: directorio de usuarios (ver arriba).
-- **`SessionsContext`**: sesiones de acceso remoto, persistidas en `localStorage` (no solo en memoria) para que "Sesiones activas" e "Historial" reflejen conexiones iniciadas desde otra pestaña del mismo navegador — útil para demostrar el módulo con dos roles abiertos a la vez.
+- **`AuthContext`**: sesión real contra `/api/auth/login`; guarda el JWT y el usuario autenticado.
+- **`TopologyContext`**: trae sitios/equipos/tramos reales (`Promise.all` sobre `listSitios`/`listEquipos`/`listTramos`) y los combina con el estado en vivo del socket de monitoreo (`useMonitoringDashboard`) para `estado`/`ultimaComprobacion`. Todos los métodos de creación/edición/baja son `async`, llaman al backend y refrescan.
+- **`SessionsContext`**: sesiones activas reales, obtenidas por polling cada 5s a `GET /api/acceso-remoto/sesiones` (el backend ya emite `sessions:update` por WebSocket, pero el frontend todavía no está suscrito a ese evento — pendiente).
 
-## Nota sobre datos aún no expuestos por el backend
+## Pendiente / fuera de alcance
 
-El backend todavía no devuelve latencia, pérdida de paquetes ni el estado operativo del PLC (RUN/STOP) en `GET /api/dashboard/summary` (solo el estado actual del nodo), ni tiene endpoints de escritura para equipos/tramos/usuarios/sitios, ni una entidad "Tramo" propia, ni autenticación real. El frontend refleja esto mostrando esos valores como "no disponible" en vez de inventarlos, y marca explícitamente qué partes de cada flujo son simulación.
+- El frontend no está suscrito a los eventos WebSocket `topology:update` ni `sessions:update`; usa polling y refetch-tras-escritura en su lugar.
+- El túnel SSH real hacia el equipo de planta no está implementado — `Conectar` gestiona la sesión (autorización, expiración, auditoría) de forma real, pero la conexión de red en sí es una simulación visual.
