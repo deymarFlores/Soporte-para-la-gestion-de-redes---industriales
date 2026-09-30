@@ -2,11 +2,16 @@ import { NODE_TYPE, type NodeType } from "../valueObjects/nodeType.js";
 import { NODE_STATUS, type NodeStatus } from "../valueObjects/nodeStatus.js";
 
 export interface NodeEntityProps {
-  id: string;
+  id?: string;
   name: string;
   type: NodeType;
   ip?: string | null;
   parentId?: string | null;
+  siteId?: string | null;
+  description?: string | null;
+  monitoringParams?: string | null;
+  enabled?: boolean;
+  remoteAccessEnabled?: boolean;
   agentToken?: string | null;
   currentStatus?: NodeStatus;
   lastHeartbeatAt?: Date | null;
@@ -16,11 +21,16 @@ export interface NodeEntityProps {
 }
 
 export class NodeEntity {
-  id: string;
+  id: string | undefined;
   name: string;
   type: NodeType;
   ip: string | null;
   parentId: string | null;
+  siteId: string | null;
+  description: string | null;
+  monitoringParams: string | null;
+  enabled: boolean;
+  remoteAccessEnabled: boolean;
   agentToken: string | null;
   currentStatus: NodeStatus;
   lastHeartbeatAt: Date | null;
@@ -39,6 +49,11 @@ export class NodeEntity {
     this.type = props.type;
     this.ip = props.ip ?? null;
     this.parentId = props.parentId ?? null;
+    this.siteId = props.siteId ?? null;
+    this.description = props.description ?? null;
+    this.monitoringParams = props.monitoringParams ?? null;
+    this.enabled = props.enabled ?? true;
+    this.remoteAccessEnabled = props.remoteAccessEnabled ?? false;
     this.agentToken = props.agentToken ?? null;
     this.currentStatus = props.currentStatus ?? NODE_STATUS.UNKNOWN;
     this.lastHeartbeatAt = props.lastHeartbeatAt ?? null;
@@ -64,5 +79,10 @@ export class NodeEntity {
   recordHeartbeat(at: Date = new Date()): void {
     this.lastHeartbeatAt = at;
     this.updatedAt = at;
+  }
+
+  setParent(parentId: string | null): void {
+    this.parentId = parentId;
+    this.updatedAt = new Date();
   }
 }

@@ -7,6 +7,11 @@ export interface NodeResponseDTO {
   type: NodeType;
   ip: string | null;
   parentId: string | null;
+  siteId: string | null;
+  description: string | null;
+  monitoringParams: string | null;
+  enabled: boolean;
+  remoteAccessEnabled: boolean;
   currentStatus: NodeStatus;
   lastHeartbeatAt: string | null;
   lastCheckedAt: string | null;
