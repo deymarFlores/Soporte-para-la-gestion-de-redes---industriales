@@ -23,8 +23,8 @@ export function EquipmentListPage() {
       });
   }, []);
 
-  const allowedIps = user?.allowedDeviceIps ?? [];
-  const myDevices = nodes.filter((node) => node.ip && allowedIps.includes(node.ip));
+  const allowedIds = user?.allowedDeviceIds ?? [];
+  const myDevices = nodes.filter((node) => allowedIds.includes(node.id));
 
   return (
     <div className="flex flex-col gap-6">
