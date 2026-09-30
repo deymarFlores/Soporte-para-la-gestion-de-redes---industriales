@@ -1,83 +1,58 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import type { AccessSessionRecord, SessionStatus } from "../types/session.js";
-import { generateId } from "../utils/id.js";
+import { requestAccess as requestAccessApi, endSession as endSessionApi, listActiveSessions } from "../api/sessions.js";
+import type { AccessSessionRecord } from "../types/session.js";
 
-const STORAGE_KEY = "access-sessions";
+const POLL_INTERVAL_MS = 5000;
 
 interface SessionsContextValue {
-  sessions: AccessSessionRecord[];
-  startSession: (data: {
-    userId: string;
-    userName: string;
-    equipoId: string;
-    equipoNombre: string;
-    motivo: string;
-    maxDurationSeconds: number;
-  }) => string;
-  endSession: (id: string, status: Exclude<SessionStatus, "ACTIVA">) => void;
+  activeSessions: AccessSessionRecord[];
+  sessionsLoading: boolean;
+  requestAccess: (input: { nodeId: string; reason: string; maxDurationSeconds: number }) => Promise<AccessSessionRecord>;
+  endSession: (id: string) => Promise<void>;
+  refreshActiveSessions: () => Promise<void>;
 }
 
 const SessionsContext = createContext<SessionsContextValue | null>(null);
 
-function readStoredSessions(): AccessSessionRecord[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AccessSessionRecord[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeStoredSessions(sessions: AccessSessionRecord[]): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-  } catch {
-    // almacenamiento no disponible (ej. modo privado); las sesiones no persisten entre pestañas
-  }
-}
-
 /**
- * Persistida en localStorage (no solo en memoria) para que "Sesiones activas" e "Historial de
- * accesos" reflejen conexiones iniciadas desde otra pestaña del mismo navegador — útil para
- * demostrar el módulo con dos roles distintos abiertos a la vez, sin backend real detrás.
+ * Las sesiones activas se consultan por polling (cada 5s) en vez de vía WebSocket: el backend
+ * ya emite `sessions:update`, pero el frontend todavía no está suscrito a ese evento — ver nota
+ * en el readme. El polling alcanza para reflejar expiraciones automáticas del servidor.
  */
 export function SessionsProvider({ children }: { children: ReactNode }) {
-  const [sessions, setSessions] = useState<AccessSessionRecord[]>(readStoredSessions);
+  const [activeSessions, setActiveSessions] = useState<AccessSessionRecord[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
 
-  useEffect(() => {
-    function handleStorage(event: StorageEvent): void {
-      if (event.key === STORAGE_KEY) setSessions(readStoredSessions());
+  async function refreshActiveSessions(): Promise<void> {
+    try {
+      const sessions = await listActiveSessions();
+      setActiveSessions(sessions);
+    } catch {
+      // se reintenta en el próximo ciclo de polling
+    } finally {
+      setSessionsLoading(false);
     }
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, []);
-
-  function persist(next: AccessSessionRecord[]): void {
-    setSessions(next);
-    writeStoredSessions(next);
   }
 
+  useEffect(() => {
+    void refreshActiveSessions();
+    const timer = window.setInterval(() => void refreshActiveSessions(), POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+
   const value: SessionsContextValue = {
-    sessions,
-    startSession: (data) => {
-      const id = generateId("sesion");
-      const record: AccessSessionRecord = {
-        id,
-        ...data,
-        startedAt: new Date().toISOString(),
-        endedAt: null,
-        status: "ACTIVA",
-      };
-      persist([record, ...sessions]);
-      return id;
+    activeSessions,
+    sessionsLoading,
+    requestAccess: async (input) => {
+      const session = await requestAccessApi(input);
+      await refreshActiveSessions();
+      return session;
     },
-    endSession: (id, status) => {
-      persist(
-        sessions.map((session) =>
-          session.id === id ? { ...session, status, endedAt: new Date().toISOString() } : session
-        )
-      );
+    endSession: async (id) => {
+      await endSessionApi(id);
+      await refreshActiveSessions();
     },
+    refreshActiveSessions,
   };
 
   return <SessionsContext.Provider value={value}>{children}</SessionsContext.Provider>;
