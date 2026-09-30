@@ -87,12 +87,39 @@ export function SitiosPage() {
   const { sitios, equipos, createSitio, updateSitio, removeSitio } = useTopology();
   const [formOpen, setFormOpen] = useState<null | "create" | string>(null);
 
+  const [actionError, setActionError] = useState<string | null>(null);
   const editingSitio = typeof formOpen === "string" ? sitios.find((sitio) => sitio.id === formOpen) : null;
 
-  function handleSubmit(data: SitioInput): void {
-    if (editingSitio) updateSitio(editingSitio.id, data);
-    else createSitio(data);
-    setFormOpen(null);
+  async function handleSubmit(data: SitioInput): Promise<void> {
+    try {
+      if (editingSitio) await updateSitio(editingSitio.id, data);
+      else await createSitio(data);
+      setActionError(null);
+      setFormOpen(null);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleToggleHabilitado(sitio: { id: string; habilitado: boolean }): Promise<void> {
+    try {
+      await updateSitio(sitio.id, { habilitado: !sitio.habilitado });
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
+  }
+
+  async function handleDelete(sitio: { id: string; nombre: string }): Promise<void> {
+    if (equipoCount(sitio.id) > 0) {
+      window.alert("No se puede eliminar un sitio con equipos asignados.");
+      return;
+    }
+    if (!window.confirm(`¿Eliminar el sitio "${sitio.nombre}"?`)) return;
+    try {
+      await removeSitio(sitio.id);
+    } catch (error) {
+      setActionError((error as Error).message);
+    }
   }
 
   function equipoCount(sitioId: string): number {
@@ -139,20 +166,14 @@ export function SitiosPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => updateSitio(sitio.id, { habilitado: !sitio.habilitado })}
+                        onClick={() => void handleToggleHabilitado(sitio)}
                         className="text-xs text-ink-muted hover:underline"
                       >
                         {sitio.habilitado ? "Deshabilitar" : "Habilitar"}
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (equipoCount(sitio.id) > 0) {
-                            window.alert("No se puede eliminar un sitio con equipos asignados.");
-                            return;
-                          }
-                          if (window.confirm(`¿Eliminar el sitio "${sitio.nombre}"?`)) removeSitio(sitio.id);
-                        }}
+                        onClick={() => void handleDelete(sitio)}
                         className="text-xs text-status-down hover:underline"
                       >
                         Eliminar
@@ -165,6 +186,8 @@ export function SitiosPage() {
           </table>
         </div>
       )}
+
+      {actionError && <div className="alert-danger">{actionError}</div>}
 
       {formOpen && (
         <Modal title={editingSitio ? "Editar sitio" : "Nuevo sitio"} onClose={() => setFormOpen(null)}>
