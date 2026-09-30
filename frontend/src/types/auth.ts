@@ -5,7 +5,10 @@ export interface AuthUser {
   name: string;
   email: string;
   role: Role;
-  allowedDeviceIps?: string[];
+  enabled: boolean;
+  lastLoginAt: string | null;
+  /** IDs (no IPs) de los equipos a los que este usuario tiene acceso remoto autorizado. */
+  allowedDeviceIds: string[];
 }
 
 /** SOPORTE y ADMINISTRADOR pueden usar acceso remoto; CONSULTA solo observa. */
