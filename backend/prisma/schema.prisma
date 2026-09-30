@@ -30,32 +30,68 @@ enum IncidentStatus {
   RESOLVED
 }
 
-model Node {
-  id              String   @id @default(uuid())
-  name            String
-  type            NodeType
-  ip              String?
-  parentId        String?
-  parent          Node?    @relation("NodeHierarchy", fields: [parentId], references: [id])
-  children        Node[]   @relation("NodeHierarchy")
+enum UserRole {
+  ADMINISTRADOR
+  SOPORTE
+  CONSULTA
+}
 
-  agentToken      String?  @unique
+enum AccessSessionStatus {
+  ACTIVE
+  ENDED
+  EXPIRED
+}
+
+model Site {
+  id          String   @id @default(uuid())
+  name        String
+  location    String?
+  description String?
+  enabled     Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  nodes Node[]
+}
+
+model Node {
+  id       String   @id @default(uuid())
+  name     String
+  type     NodeType
+  ip       String?
+  parentId String?
+  parent   Node?    @relation("NodeHierarchy", fields: [parentId], references: [id])
+  children Node[]   @relation("NodeHierarchy")
+
+  siteId              String?
+  site                Site?   @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  description         String?
+  monitoringParams    String?
+  enabled             Boolean @default(true)
+  remoteAccessEnabled Boolean @default(false)
+
+  agentToken String? @unique
 
   currentStatus   NodeStatus @default(UNKNOWN)
   lastHeartbeatAt DateTime?
   lastCheckedAt   DateTime?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  statusEvents    StatusEvent[]
-  incidents       Incident[]
+  statusEvents      StatusEvent[]
+  incidents         Incident[]
+  segmentsAsOrigin  Segment[]          @relation("SegmentOrigin")
+  segmentsAsDest    Segment[]          @relation("SegmentDestination")
+  accessGrants      UserDeviceAccess[]
+  accessSessions    AccessSession[]
 }
 
 model StatusEvent {
-  id            String     @id @default(uuid())
-  nodeId        String
-  node          Node       @relation(fields: [nodeId], references: [id])
+  id     String @id @default(uuid())
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id])
 
   status        NodeStatus
   latencyMs     Int?
@@ -63,22 +99,84 @@ model StatusEvent {
   metadata      Json?
   source        String
 
-  occurredAt    DateTime   @default(now())
+  occurredAt DateTime @default(now())
 }
 
 model Incident {
-  id              String         @id @default(uuid())
-  nodeId          String
-  node            Node           @relation(fields: [nodeId], references: [id])
+  id     String @id @default(uuid())
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id])
 
-  type            IncidentType
-  status          IncidentStatus @default(ACTIVE)
+  type   IncidentType
+  status IncidentStatus @default(ACTIVE)
 
-  rootIncidentId  String?
-  rootIncident    Incident?      @relation("IncidentDependency", fields: [rootIncidentId], references: [id])
-  dependents      Incident[]     @relation("IncidentDependency")
+  rootIncidentId String?
+  rootIncident   Incident?  @relation("IncidentDependency", fields: [rootIncidentId], references: [id])
+  dependents     Incident[] @relation("IncidentDependency")
 
-  startedAt       DateTime       @default(now())
+  startedAt       DateTime  @default(now())
   resolvedAt      DateTime?
   durationSeconds Int?
+}
+
+model Segment {
+  id            String @id @default(uuid())
+  name          String
+  originId      String
+  origin        Node   @relation("SegmentOrigin", fields: [originId], references: [id])
+  destinationId String
+  destination   Node   @relation("SegmentDestination", fields: [destinationId], references: [id])
+
+  connectionType         String
+  monitoringMethod       String
+  checkIntervalSeconds   Int     @default(30)
+  latencyThresholdMs     Int     @default(200)
+  packetLossThresholdPct Float   @default(5)
+  enabled                Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  enabled      Boolean  @default(true)
+  lastLoginAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deviceAccess   UserDeviceAccess[]
+  accessSessions AccessSession[]
+}
+
+model UserDeviceAccess {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, nodeId])
+}
+
+model AccessSession {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+  nodeId String
+  node   Node   @relation(fields: [nodeId], references: [id])
+
+  reason             String
+  maxDurationSeconds Int
+  status             AccessSessionStatus @default(ACTIVE)
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
 }
