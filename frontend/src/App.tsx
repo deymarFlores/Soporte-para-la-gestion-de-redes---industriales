@@ -1,5 +1,4 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import { UsersProvider } from "./context/UsersContext.js";
 import { AuthProvider } from "./context/AuthContext.js";
 import { TopologyProvider } from "./context/TopologyContext.js";
 import { SessionsProvider } from "./context/SessionsContext.js";
@@ -66,10 +65,8 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <UsersProvider>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </UsersProvider>
+    <AuthProvider>
+      <AppRoutes />
+    </AuthProvider>
   );
 }
