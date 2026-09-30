@@ -10,15 +10,18 @@ export function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   if (user) {
     const redirectTo = (location.state as { from?: string } | null)?.from ?? "/";
     return <Navigate to={redirectTo} replace />;
   }
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    const success = login(email, password);
+  async function attemptLogin(loginEmail: string, loginPassword: string): Promise<void> {
+    setLoading(true);
+    const success = await login(loginEmail, loginPassword);
+    setLoading(false);
+
     if (!success) {
       setError("Correo o contraseña incorrectos");
       return;
@@ -27,11 +30,15 @@ export function LoginPage() {
     navigate("/", { replace: true });
   }
 
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    void attemptLogin(email, password);
+  }
+
   function loginAs(demoEmail: string, demoPassword: string) {
     setEmail(demoEmail);
     setPassword(demoPassword);
-    const success = login(demoEmail, demoPassword);
-    if (success) navigate("/", { replace: true });
+    void attemptLogin(demoEmail, demoPassword);
   }
 
   return (
@@ -77,8 +84,8 @@ export function LoginPage() {
             </p>
           )}
 
-          <button type="submit" className="btn btn-primary mt-2">
-            Entrar
+          <button type="submit" disabled={loading} className="btn btn-primary mt-2 disabled:cursor-not-allowed disabled:opacity-60">
+            {loading ? "Entrando…" : "Entrar"}
           </button>
         </form>
 
